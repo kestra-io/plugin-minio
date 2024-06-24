@@ -26,7 +26,7 @@ sourceCompatibility = 21
 targetCompatibility = 21
 
 group "io.kestra.plugin"
-description 'Plugin template for Kestra'
+description 'Plugin MinIO for Kestra'
 
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
@@ -48,6 +48,9 @@ dependencies {
 
     // libs included in the final jar
     api group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
+
+    // Minio client dependency
+    implementation 'io.minio:minio:8.5.10'
 }
 
 
@@ -67,6 +70,15 @@ testlogger {
     showSkippedStandardStreams true
 }
 
+// Due to bug that's cannot see com.fasterxml.jackson.annotation.JsonKey which is required in tests
+configurations.all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'com.fasterxml.jackson.core' && details.requested.name.startsWith('jackson-')) {
+            details.useVersion '2.17.1'
+        }
+    }
+}
+
 dependencies {
     // lombok
     testAnnotationProcessor "org.projectlombok:lombok:" + lombokVersion
@@ -84,6 +96,9 @@ dependencies {
     // Kestra
     testAnnotationProcessor group: "io.kestra", name: "processor", version: kestraVersion
 
+    testAnnotationProcessor enforcedPlatform("io.kestra:platform:$kestraVersion")
+    testImplementation enforcedPlatform("io.kestra:platform:$kestraVersion")
+
     // test deps needed only for to have a runner
     testAnnotationProcessor group: "io.kestra", name: "processor", version: kestraVersion
     testImplementation group: "io.kestra", name: "core", version: kestraVersion
@@ -91,11 +106,25 @@ dependencies {
     testImplementation group: "io.kestra", name: "repository-memory", version: kestraVersion
     testImplementation group: "io.kestra", name: "runner-memory", version: kestraVersion
     testImplementation group: "io.kestra", name: "storage-local", version: kestraVersion
+    testImplementation group: "io.kestra", name: "tests", version: kestraVersion
 
     // test
     testImplementation "org.junit.jupiter:junit-jupiter-engine"
-    testImplementation "org.hamcrest:hamcrest:2.2"
-    testImplementation "org.hamcrest:hamcrest-library:2.2"
+    testImplementation "org.hamcrest:hamcrest"
+    testImplementation "org.hamcrest:hamcrest-library"
+    testImplementation 'org.mockito:mockito-junit-jupiter'
+
+    // testcontainers
+    testImplementation "org.testcontainers:testcontainers:1.19.8"
+    testImplementation "org.testcontainers:junit-jupiter:1.19.8"
+    testImplementation "org.testcontainers:minio:1.19.8"
+    testImplementation "org.testcontainers:localstack:1.19.8"
+
+    testImplementation 'io.minio:minio:8.5.10'
+
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
+    testImplementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.1'
+    testImplementation 'com.fasterxml.jackson.core:jackson-core:2.17.1'
 }
 
 /**********************************************************************************************************************\
@@ -150,8 +179,8 @@ jar {
     manifest {
         attributes(
                 "X-Kestra-Name": project.name,
-                "X-Kestra-Title": "Template",
-                "X-Kestra-Group": project.group + ".templates",
+                "X-Kestra-Title": "MinIO",
+                "X-Kestra-Group": project.group + ".minio",
                 "X-Kestra-Description": project.description,
                 "X-Kestra-Version": project.version
         )

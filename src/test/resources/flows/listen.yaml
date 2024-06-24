@@ -1,0 +1,18 @@
+id: listen
+namespace: io.kestra.tests
+
+triggers:
+  - id: watch
+    type: io.kestra.plugin.minio.Trigger
+    bucket: trigger-test
+    interval: PT10S
+    action: DELETE
+    endpoint: http://s3.localhost.localstack.cloud:4566
+    region: us-east-1
+    accessKeyId: accesskey
+    secretKeyId: secretkey
+
+tasks:
+  - id: end
+    type: io.kestra.plugin.core.debug.Return
+    format: "{{task.id}} > {{taskrun.startDate}}"
