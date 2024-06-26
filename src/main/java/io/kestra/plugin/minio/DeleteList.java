@@ -43,7 +43,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
     }
 )
 @Schema(
-    title = "Delete a list of keys on a S3 service."
+    title = "Delete a list of keys on a bucket."
 )
 public class DeleteList extends AbstractMinioObject implements RunnableTask<DeleteList.Output> {
 
@@ -100,7 +100,7 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
     @Schema(
         title = "raise an error if the file is not found"
     )
-    @PluginProperty(dynamic = true)
+    @PluginProperty
     @Builder.Default
     private final Boolean errorOnEmpty = false;
 

@@ -30,7 +30,7 @@ import lombok.experimental.SuperBuilder;
     }
 )
 @Schema(
-    title = "Delete a file from S3 service."
+    title = "Delete a file from a bucket."
 )
 public class Delete extends AbstractMinioObject implements RunnableTask<Delete.Output> {
 
@@ -41,7 +41,7 @@ public class Delete extends AbstractMinioObject implements RunnableTask<Delete.O
     private String key;
 
     @Schema(
-        title = "Indicates whether S3 Object Lock should bypass Governance-mode restrictions to process this operation."
+        title = "Indicates whether Object Lock should bypass Governance-mode restrictions to process this operation."
     )
     @PluginProperty
     private Boolean bypassGovernanceRetention;

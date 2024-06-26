@@ -40,7 +40,7 @@ import java.nio.file.Path;
     }
 )
 @Schema(
-    title = "Download a file from S3 service."
+    title = "Download a file from a bucket."
 )
 public class Download extends AbstractMinioObject implements RunnableTask<Download.Output> {
 

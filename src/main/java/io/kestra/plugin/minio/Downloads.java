@@ -40,7 +40,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
     }
 )
 @Schema(
-    title = "Downloads multiple files from a S3 service."
+    title = "Downloads multiple files from a bucket."
 )
 public class Downloads extends AbstractMinioObject implements RunnableTask<Downloads.Output> {
 
@@ -63,8 +63,8 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
     private String delimiter;
 
     @Schema(
-        title = "Marker is where you want Amazon S3 to start listing from.",
-        description = "Amazon S3 starts listing after this specified key. Marker can be any key in the bucket."
+        title = "Marker is where you want to start listing from.",
+        description = "Start listing after this specified key. Marker can be any key in the bucket."
     )
     @PluginProperty(dynamic = true)
     private String marker;
@@ -170,7 +170,7 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
     public static class Output implements io.kestra.core.models.tasks.Output {
         @JsonInclude
         @Schema(
-            title = "The list of S3 objects."
+            title = "The list of objects."
         )
         private final java.util.List<MinioObject> objects;
 

@@ -37,7 +37,7 @@ import lombok.experimental.SuperBuilder;
     }
 )
 @Schema(
-    title = "Copy a file between S3 service."
+    title = "Copy a file between buckets."
 )
 public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Output> {
 

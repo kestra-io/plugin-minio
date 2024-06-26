@@ -36,7 +36,7 @@ import lombok.experimental.SuperBuilder;
 public class CreateBucket extends AbstractMinioObject implements RunnableTask<CreateBucket.Output> {
 
     @Schema(
-        title = "Specifies whether you want S3 Object Lock to be enabled for the new bucket."
+        title = "Specifies whether you want Object Lock to be enabled for the new bucket."
     )
     @PluginProperty
     private Boolean objectLockEnabledForBucket;

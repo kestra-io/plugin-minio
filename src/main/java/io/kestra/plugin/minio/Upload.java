@@ -50,7 +50,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
     }
 )
 @Schema(
-    title = "Upload a file to S3."
+    title = "Upload a file to a bucket."
 )
 public class Upload extends AbstractMinioObject implements RunnableTask<Upload.Output> {
 
@@ -76,7 +76,7 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     private String contentType;
 
     @Schema(
-        title = "A map of metadata to store with the object in S3."
+        title = "A map of metadata to store with the object."
     )
     @PluginProperty(dynamic = true)
     private Map<String, String> metadata;

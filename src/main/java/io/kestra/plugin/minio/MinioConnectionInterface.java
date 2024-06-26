@@ -8,19 +8,19 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public interface MinioConnectionInterface {
 
     @Schema(
-        title = "URL to S3 service."
+        title = "URL to the MinIO endpoint."
     )
     @PluginProperty(dynamic = true)
     String getEndpoint();
 
     @Schema(
-        title = "Access Key Id in order to connect to S3 service."
+        title = "Access Key Id for authentication."
     )
     @PluginProperty(dynamic = true)
     String getAccessKeyId();
 
     @Schema(
-        title = "Secret Key Id in order to connect to S3 service."
+        title = "Secret Key Id for authentication."
     )
     @PluginProperty(dynamic = true)
     String getSecretKeyId();
