@@ -16,7 +16,7 @@ import lombok.experimental.SuperBuilder;
 public abstract class AbstractMinioObject extends MinioConnection implements AbstractMinio {
 
     @Schema(
-        title = "The S3 bucket name."
+        title = "The bucket name."
     )
     @PluginProperty(dynamic = true)
     protected String bucket;

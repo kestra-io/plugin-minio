@@ -60,8 +60,8 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
     private String delimiter;
 
     @Schema(
-        title = "Marker is where you want Amazon S3 to start listing from.",
-        description = "Amazon S3 starts listing after this specified key. Marker can be any key in the bucket."
+        title = "Marker is where you want to start listing from.",
+        description = "Start listing after this specified key. Marker can be any key in the bucket."
     )
     @PluginProperty(dynamic = true)
     private String marker;

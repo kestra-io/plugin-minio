@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class TriggerTest extends AbstractLocalStackTest {
+public class TriggerTest extends AbstractMinIoTest {
 
     @Inject
     private ApplicationContext applicationContext;

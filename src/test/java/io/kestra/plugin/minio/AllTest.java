@@ -3,7 +3,6 @@ package io.kestra.plugin.minio;
 import com.google.common.io.CharStreams;
 import io.minio.errors.ErrorResponseException;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.localstack.LocalStackContainer;
 
 import java.io.FileInputStream;
 import java.io.InputStream;

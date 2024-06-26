@@ -36,7 +36,7 @@ public class AbstractMinIoTest {
             .withUserName("testuser")
             .withPassword("testpassword");
 
-        minIOContainer.setPortBindings(Collections.singletonList("4567:4567"));
+        minIOContainer.setPortBindings(Collections.singletonList("9000:9000"));
         minIOContainer.start();
     }
 

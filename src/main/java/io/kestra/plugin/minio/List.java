@@ -100,7 +100,7 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
     protected final Filter filter = Filter.BOTH;
 
     @Schema(
-        title = "Indicates whether S3 finder should look into subfolders."
+        title = "Indicates whether it should look into subfolders."
     )
     @PluginProperty
     @Builder.Default
