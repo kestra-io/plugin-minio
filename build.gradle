@@ -52,7 +52,7 @@ dependencies {
     compileOnly'org.slf4j:slf4j-api'
 
     // Minio client dependency
-    implementation 'io.minio:minio:8.5.10'
+    implementation 'io.minio:minio:8.5.11'
 }
 
 
