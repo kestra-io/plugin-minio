@@ -97,6 +97,35 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                 "    prefix: \"sub-dir\"",
                 "    action: NONE",
             }
+        ),
+        @Example(
+            title = "Wait for a list of files on a bucket on an S3-compatible storage — here, Spaces Object Storage from Digital Ocean. Iterate through those files, and move it to another folder.",
+            full = true,
+            code = """
+              id: trigger_on_s3_compatible_storage
+              namespace: company.team
+              tasks:
+                - id: each
+                  type: io.kestra.plugin.core.flow.EachSequential
+                  tasks:
+                    - id: return
+                      type: io.kestra.plugin.core.debug.Return
+                      format: "{{ taskrun.value }}"
+                  value: "{{ trigger.objects | jq('.[].uri') }}"
+              
+              triggers:
+                - id: watch
+                  type: io.kestra.plugin.minio.Trigger
+                  interval: "PT5M"
+                  accessKeyId: "<access-key>"
+                  secretKeyId: "<secret-key>"
+                  endpoint: https://<region>>.digitaloceanspaces.com
+                  bucket: "kestra-test-bucket"
+                  prefix: "sub-dir"
+                  action: MOVE
+                  moveTo: 
+                    key: archive
+              """
         )
     }
 )

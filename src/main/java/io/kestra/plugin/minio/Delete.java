@@ -26,6 +26,22 @@ import lombok.experimental.SuperBuilder;
                 "bucket: \"my-bucket\"",
                 "key: \"path/to/file\""
             }
+        ),
+        @Example(
+            title = "Delete file from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
+            full = true,
+            code = """
+              id: s3_compatible_delete
+              namespace: company.team
+              tasks:
+                - id: "delete"
+                  type: "io.kestra.plugin.minio.Downloads"
+                  accessKeyId: "<access-key>"
+                  secretKeyId: "<secret-key>"
+                  endpoint: https://<region>.digitaloceanspaces.com
+                  bucket: "kestra-test-bucket"
+                  key: "path/to/file"
+              """
         )
     }
 )

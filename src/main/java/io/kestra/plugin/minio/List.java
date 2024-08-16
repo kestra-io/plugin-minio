@@ -36,6 +36,21 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                 "bucket: \"my-bucket\"",
                 "prefix: \"sub-dir\""
             }
+        ),
+        @Example(
+            title = "List files from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
+            full = true,
+            code = """
+              id: s3_compatible_list
+              namespace: company.team
+              tasks:
+                - id: "list_objects"
+                  type: "io.kestra.plugin.minio.List"
+                  accessKeyId: "<access-key>"
+                  secretKeyId: "<secret-key>"
+                  endpoint: https://<region>.digitaloceanspaces.com
+                  bucket: "kestra-test-bucket"
+              """
         )
     }
 )

@@ -46,6 +46,26 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                 "bucket: \"my-bucket\"",
                 "key: \"path/to/file\""
             }
+        ),
+        @Example(
+            title = "Upload file to an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
+            full = true,
+            code = """
+              id: s3_compatible_upload
+              namespace: company.team
+              tasks:
+                - id: http_download
+                  type: io.kestra.plugin.core.http.Download
+                  uri: https://huggingface.co/datasets/kestra/datasets/raw/main/csv/orders.csv
+                - id: "upload_to_storage"
+                  type: "io.kestra.plugin.minio.Upload"
+                  accessKeyId: "<access-key>"
+                  secretKeyId: "<secret-key>"
+                  endpoint: https://<region>.digitaloceanspaces.com  #example regions: nyc3, tor1
+                  bucket: "kestra-test-bucket"
+                  from: "{{ outputs.http_download.uri }}"
+                  key: "data/orders.csv"
+              """
         )
     }
 )

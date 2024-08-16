@@ -39,6 +39,22 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                 "bucket: \"my-bucket\"",
                 "prefix: \"sub-dir\""
             }
+        ),
+        @Example(
+            title = "Delete files from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
+            full = true,
+            code = """
+              id: s3_compatible_delete_objects
+              namespace: company.team
+              tasks:
+                - id: "delete_objects"
+                  type: "io.kestra.plugin.minio.DeleteList"
+                  accessKeyId: "<access-key>"
+                  secretKeyId: "<secret-key>"
+                  endpoint: https://<region>.digitaloceanspaces.com
+                  bucket: "kestra-test-bucket"
+                  prefix: "sub-dir"
+              """
         )
     }
 )
