@@ -32,7 +32,7 @@ import lombok.experimental.SuperBuilder;
             title = "Create a new bucket on s3-compatible storage like Digital Ocean cloud's Spaces Object Storage.",
             full = true,
             code = """
-              id: s3_compatible_storage_flow
+              id: s3_compatible_bucket
               namespace: company.team
               tasks:
                 - id: "create_bucket"
