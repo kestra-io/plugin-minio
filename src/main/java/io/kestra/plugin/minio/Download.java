@@ -36,6 +36,22 @@ import java.nio.file.Path;
                 "bucket: \"my-bucket\"",
                 "key: \"path/to/file\""
             }
+        ),
+        @Example(
+            title = "Download file from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
+            full = true,
+            code = """
+              id: s3_compatible_download
+              namespace: company.team
+              tasks:
+                - id: "download_from_storage"
+                  type: "io.kestra.plugin.minio.Download"
+                  accessKeyId: "<access-key>"
+                  secretKeyId: "<secret-key>"
+                  endpoint: https://<region>.digitaloceanspaces.com
+                  bucket: "kestra-test-bucket"
+                  key: "data/orders.csv"
+              """
         )
     }
 )

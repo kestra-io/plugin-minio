@@ -34,8 +34,26 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                 "secretKeyId: \"<secret-key>\"",
                 "region: \"eu-central-1\"",
                 "bucket: \"my-bucket\"",
-                "prefix: \"sub-dir\""
+                "prefix: \"sub-dir\"",
+                "action: \"DELETE\""
             }
+        ),
+        @Example(
+            title = "Download files from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
+            full = true,
+            code = """
+              id: s3_compatible_downloads
+              namespace: company.team
+              tasks:
+                - id: "downloads"
+                  type: "io.kestra.plugin.minio.Downloads"
+                  accessKeyId: "<access-key>"
+                  secretKeyId: "<secret-key>"
+                  endpoint: https://<region>.digitaloceanspaces.com
+                  bucket: "kestra-test-bucket"
+                  prefix: "data/orders"
+                  action: "DELETE"
+              """
         )
     }
 )
