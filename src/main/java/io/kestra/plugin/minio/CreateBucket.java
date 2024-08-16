@@ -27,6 +27,21 @@ import lombok.experimental.SuperBuilder;
                 "region: \"eu-central-1\"",
                 "bucket: \"my-bucket\""
             }
+        ),
+        @Example(
+            title = "Create a new bucket on an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
+            full = true,
+            code = """
+              id: s3_compatible_bucket
+              namespace: company.team
+              tasks:
+                - id: "create_bucket"
+                  type: "io.kestra.plugin.minio.CreateBucket"
+                  accessKeyId: "<access_key>"
+                  secretKeyId: "<secret_key>"
+                  endpoint: https://<region>.digitaloceanspaces.com  #example region: nyc3, tor1
+                  bucket: "kestra-test-bucket"
+              """
         )
     }
 )
