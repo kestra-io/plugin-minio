@@ -29,7 +29,7 @@ import lombok.experimental.SuperBuilder;
             }
         ),
         @Example(
-            title = "Create a new bucket on s3-compatible storage like Digital Ocean cloud's Spaces Object Storage.",
+            title = "Create a new bucket on an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
             full = true,
             code = """
               id: s3_compatible_bucket
