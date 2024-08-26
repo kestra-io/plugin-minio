@@ -37,7 +37,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             title = "Wait for a list of files on a bucket and iterate through the files.",
             full = true,
             code = {
-                "id: minio-listen",
+                "id: minio_listen",
                 "namespace: company.team",
                 "",
                 "tasks:",
@@ -67,7 +67,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             title = "Wait for a list of files on a bucket and iterate through the files. Delete files manually after processing to prevent infinite triggering.",
             full = true,
             code = {
-                "id: minio-listen",
+                "id: minio_listen",
                 "namespace: company.team",
                 "",
                 "tasks:",

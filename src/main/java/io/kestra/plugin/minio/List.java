@@ -29,13 +29,20 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
 @Plugin(
     examples = {
         @Example(
-            code = {
-                "accessKeyId: \"<access-key>\"",
-                "secretKeyId: \"<secret-key>\"",
-                "region: \"eu-central-1\"",
-                "bucket: \"my-bucket\"",
-                "prefix: \"sub-dir\""
-            }
+            full = true,
+            code = """
+                id: minio_list
+                namespace: company.team
+                
+                tasks:
+                  - id: list_objects
+                    type: io.kestra.plugin.minio.List
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    region: "eu-central-1"
+                    bucket: "my-bucket"
+                    prefix: "sub-dir"
+                """
         ),
         @Example(
             title = "List files from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
@@ -43,9 +50,10 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             code = """
               id: s3_compatible_list
               namespace: company.team
+
               tasks:
-                - id: "list_objects"
-                  type: "io.kestra.plugin.minio.List"
+                - id: list_objects
+                  type: io.kestra.plugin.minio.List
                   accessKeyId: "<access-key>"
                   secretKeyId: "<secret-key>"
                   endpoint: https://<region>.digitaloceanspaces.com

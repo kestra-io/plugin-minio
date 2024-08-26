@@ -22,17 +22,24 @@ import lombok.experimental.SuperBuilder;
 @Plugin(
     examples = {
         @Example(
-            code = {
-                "accessKeyId: \"<access-key>\"",
-                "secretKeyId: \"<secret-key>\"",
-                "region: \"eu-central-1\"",
-                "from:",
-                "  bucket: \"my-bucket\"",
-                "  key: \"path/to/file\"",
-                "to:",
-                "  bucket: \"my-bucket2\"",
-                "  key: \"path/to/file2\"",
-            }
+            full = true,
+            code = """
+                id: minio_copy
+                namespace: company.team
+
+                tasks:
+                  - id: copy
+                    type: io.kestra.plugin.minio.Copy
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    region: "eu-central-1"
+                    from:
+                      bucket: "my-bucket"
+                      key: "path/to/file"
+                    to:
+                      bucket: "my-bucket2"
+                      key: "path/to/file2"
+                """
         ),
         @Example(
             title = "Copy file in an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
@@ -40,9 +47,10 @@ import lombok.experimental.SuperBuilder;
             code = """
               id: s3_compatible_copy
               namespace: company.team
+
               tasks:
-                - id: "copy_file"
-                  type: "io.kestra.plugin.minio.Copy"
+                - id: copy_file
+                  type: io.kestra.plugin.minio.Copy
                   accessKeyId: "<access-key>"
                   secretKeyId: "<secret-key>"
                   endpoint: https://<region>.digitaloceanspaces.com

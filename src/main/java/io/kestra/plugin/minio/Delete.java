@@ -19,13 +19,20 @@ import lombok.experimental.SuperBuilder;
 @Plugin(
     examples = {
         @Example(
-            code = {
-                "accessKeyId: \"<access-key>\"",
-                "secretKeyId: \"<secret-key>\"",
-                "region: \"eu-central-1\"",
-                "bucket: \"my-bucket\"",
-                "key: \"path/to/file\""
-            }
+            full = true,
+            code = """
+                id: minio_delete
+                namespace: company.team
+                
+                tasks:
+                  - id: delete
+                    type: io.kestra.plugin.minio.Delete
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    region: "eu-central-1"
+                    bucket: "my-bucket"
+                    key: "path/to/file"
+                """
         ),
         @Example(
             title = "Delete file from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
@@ -33,9 +40,10 @@ import lombok.experimental.SuperBuilder;
             code = """
               id: s3_compatible_delete
               namespace: company.team
+
               tasks:
-                - id: "delete"
-                  type: "io.kestra.plugin.minio.Downloads"
+                - id: delete
+                  type: io.kestra.plugin.minio.Delete
                   accessKeyId: "<access-key>"
                   secretKeyId: "<secret-key>"
                   endpoint: https://<region>.digitaloceanspaces.com
