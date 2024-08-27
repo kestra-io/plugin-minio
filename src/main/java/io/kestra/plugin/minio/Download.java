@@ -29,13 +29,20 @@ import java.nio.file.Path;
 @Plugin(
     examples = {
         @Example(
-            code = {
-                "accessKeyId: \"<access-key>\"",
-                "secretKeyId: \"<secret-key>\"",
-                "region: \"eu-central-1\"",
-                "bucket: \"my-bucket\"",
-                "key: \"path/to/file\""
-            }
+            full = true,
+            code = """
+                id: minio_download
+                namespace: company.team
+                
+                tasks:
+                  - id: download_from_storage
+                    type: io.kestra.plugin.minio.Download    
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    region: "eu-central-1"
+                    bucket: "my-bucket"
+                    key: "path/to/file"
+                """
         ),
         @Example(
             title = "Download file from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
@@ -43,9 +50,10 @@ import java.nio.file.Path;
             code = """
               id: s3_compatible_download
               namespace: company.team
+
               tasks:
-                - id: "download_from_storage"
-                  type: "io.kestra.plugin.minio.Download"
+                - id: download_from_storage
+                  type: io.kestra.plugin.minio.Download
                   accessKeyId: "<access-key>"
                   secretKeyId: "<secret-key>"
                   endpoint: https://<region>.digitaloceanspaces.com

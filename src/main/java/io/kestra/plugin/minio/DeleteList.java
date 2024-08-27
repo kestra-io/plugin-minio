@@ -32,13 +32,20 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
 @Plugin(
     examples = {
         @Example(
-            code = {
-                "accessKeyId: \"<access-key>\"",
-                "secretKeyId: \"<secret-key>\"",
-                "region: \"eu-central-1\"",
-                "bucket: \"my-bucket\"",
-                "prefix: \"sub-dir\""
-            }
+            full = true,
+            code = """
+                id: minio_delete_objects
+                namespace: company.team
+                
+                tasks:
+                  - id: delete_objects
+                    type: io.kestra.plugin.minio.DeleteList
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    region: "eu-central-1"
+                    bucket: "my-bucket"
+                    prefix: "sub-dir"
+                """
         ),
         @Example(
             title = "Delete files from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
@@ -46,9 +53,10 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             code = """
               id: s3_compatible_delete_objects
               namespace: company.team
+
               tasks:
-                - id: "delete_objects"
-                  type: "io.kestra.plugin.minio.DeleteList"
+                - id: delete_objects
+                  type: io.kestra.plugin.minio.DeleteList
                   accessKeyId: "<access-key>"
                   secretKeyId: "<secret-key>"
                   endpoint: https://<region>.digitaloceanspaces.com
