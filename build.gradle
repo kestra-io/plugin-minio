@@ -46,13 +46,16 @@ dependencies {
     // Kestra
     annotationProcessor group: "io.kestra", name: "processor"
     compileOnly group: "io.kestra", name: "core"
-    annotationProcessor group: "io.kestra", name: "processor"
 
     // Logs
     compileOnly'org.slf4j:slf4j-api'
 
     // Minio client dependency
-    implementation 'io.minio:minio:8.5.12'
+    implementation ('io.minio:minio:8.5.12') {
+        exclude (group: 'com.fasterxml.jackson.core', module: 'jackson-core')
+        exclude (group: 'com.fasterxml.jackson.core', module: 'jackson-databind')
+        exclude (group: 'com.fasterxml.jackson.core', module: 'jackson-annotations')
+    }
 }
 
 
@@ -70,15 +73,6 @@ testlogger {
     showStandardStreams true
     showPassedStandardStreams false
     showSkippedStandardStreams true
-}
-
-// Due to bug that's cannot see com.fasterxml.jackson.annotation.JsonKey which is required in tests
-configurations.all {
-    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-        if (details.requested.group == 'com.fasterxml.jackson.core' && details.requested.name.startsWith('jackson-')) {
-            details.useVersion '2.17.1'
-        }
-    }
 }
 
 dependencies {
