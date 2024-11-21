@@ -49,7 +49,7 @@ public class AllTest extends AbstractMinIoTest {
 
         Download.Output downloadOutput = download.run(runContext(download));
 
-        InputStream get = storageInterface.get(null, downloadOutput.getUri());
+        InputStream get = storageInterface.get(null, null, downloadOutput.getUri());
         assertThat(
             CharStreams.toString(new InputStreamReader(get)),
             is(CharStreams.toString(new InputStreamReader(new FileInputStream(file()))))

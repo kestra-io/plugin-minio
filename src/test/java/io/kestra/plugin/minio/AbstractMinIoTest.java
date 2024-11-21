@@ -88,6 +88,7 @@ public class AbstractMinIoTest {
     protected URI storagePut(String path) throws URISyntaxException, IOException {
         return storageInterface.put(
             null,
+            null,
             new URI("/" + (path != null ? path : IdUtils.create())),
             new FileInputStream(file())
         );
