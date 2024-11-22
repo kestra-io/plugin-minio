@@ -42,7 +42,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                 
                 tasks:
                   - id: each
-                    type: io.kestra.plugin.core.flow.EachSequential
+                    type: io.kestra.plugin.core.flow.ForEach
                     values: "{{ trigger.objects | jq('.[].uri') }}"
                     tasks:
                       - id: return
