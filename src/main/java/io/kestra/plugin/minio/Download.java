@@ -33,10 +33,10 @@ import java.nio.file.Path;
             code = """
                 id: minio_download
                 namespace: company.team
-                
+
                 tasks:
                   - id: download_from_storage
-                    type: io.kestra.plugin.minio.Download    
+                    type: io.kestra.plugin.minio.Download
                     accessKeyId: "<access-key>"
                     secretKeyId: "<secret-key>"
                     region: "eu-central-1"
@@ -82,7 +82,7 @@ public class Download extends AbstractMinioObject implements RunnableTask<Downlo
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String bucket = runContext.render(this.bucket);
+        String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
         String key = runContext.render(this.key);
 
         try (MinioAsyncClient client = this.asyncClient(runContext)) {

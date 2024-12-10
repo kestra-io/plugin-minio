@@ -1,6 +1,7 @@
 package io.kestra.plugin.minio;
 
 import io.kestra.core.models.executions.Execution;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.queues.QueueFactoryInterface;
 import io.kestra.core.queues.QueueInterface;
 import io.kestra.core.repositories.LocalFlowRepositoryLoader;
@@ -44,7 +45,7 @@ public class TriggerTest extends AbstractMinIoTest {
     void deleteAction() throws Exception {
         String bucket = "trigger-test";
         this.createBucket(bucket);
-        List listTask = list().bucket(bucket).build();
+        List listTask = list().bucket(Property.of(bucket)).build();
 
         // mock flow listeners
         CountDownLatch queueCount = new CountDownLatch(1);

@@ -69,7 +69,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                 - id: http_download
                   type: io.kestra.plugin.core.http.Download
                   uri: https://huggingface.co/datasets/kestra/datasets/raw/main/csv/orders.csv\
-                
+
                 - id: upload_to_storage
                   type: io.kestra.plugin.minio.Upload
                   accessKeyId: "<access-key>"
@@ -116,7 +116,7 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String bucket = runContext.render(this.bucket);
+        String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
         String key = runContext.render(this.key);
 
         String[] renderedFroms;

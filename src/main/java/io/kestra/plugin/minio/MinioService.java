@@ -1,6 +1,7 @@
 package io.kestra.plugin.minio;
 
 import io.kestra.core.models.executions.metrics.Counter;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.utils.FileUtils;
 import io.kestra.plugin.minio.model.MinioObject;
@@ -33,7 +34,7 @@ public class MinioService {
                     .accessKeyId(minioConnection.getAccessKeyId())
                     .secretKeyId(minioConnection.getSecretKeyId())
                     .key(object.getKey())
-                    .bucket(bucket)
+                    .bucket(Property.of(bucket))
                     .endpoint(minioConnection.getEndpoint())
                     .build();
                 delete.run(runContext);
@@ -50,7 +51,7 @@ public class MinioService {
                     .from(
                         Copy.CopyObjectFrom
                             .builder()
-                            .bucket(bucket)
+                            .bucket(Property.of(bucket))
                             .key(object.getKey())
                             .build()
                     )

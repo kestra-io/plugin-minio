@@ -66,7 +66,7 @@ public class CreateBucket extends AbstractMinioObject implements RunnableTask<Cr
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String bucket = runContext.render(this.bucket);
+        String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
 
         try (MinioClient client = this.client(runContext)) {
 

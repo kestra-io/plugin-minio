@@ -1,5 +1,6 @@
 package io.kestra.plugin.minio;
 
+import io.kestra.core.models.property.Property;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -20,10 +21,10 @@ public class DownloadsTest extends AbstractMinIoTest {
         Downloads task = Downloads.builder()
             .id(DownloadsTest.class.getSimpleName())
             .type(Downloads.class.getName())
-            .bucket(this.BUCKET)
-            .endpoint(minIOContainer.getS3URL())
-            .accessKeyId(minIOContainer.getUserName())
-            .secretKeyId(minIOContainer.getPassword())
+            .bucket(Property.of(this.BUCKET))
+            .endpoint(Property.of(minIOContainer.getS3URL()))
+            .accessKeyId(Property.of(minIOContainer.getUserName()))
+            .secretKeyId(Property.of(minIOContainer.getPassword()))
             .action(Downloads.Action.DELETE)
             .build();
 
@@ -48,10 +49,10 @@ public class DownloadsTest extends AbstractMinIoTest {
         Downloads task = Downloads.builder()
             .id(DownloadsTest.class.getSimpleName())
             .type(Downloads.class.getName())
-            .bucket("{{bucket}}")
-            .endpoint(minIOContainer.getS3URL())
-            .accessKeyId(minIOContainer.getUserName())
-            .secretKeyId(minIOContainer.getPassword())
+            .bucket(new Property<>("{{bucket}}"))
+            .endpoint(Property.of(minIOContainer.getS3URL()))
+            .accessKeyId(Property.of(minIOContainer.getUserName()))
+            .secretKeyId(Property.of(minIOContainer.getPassword()))
             .action(Downloads.Action.MOVE)
             .moveTo(Copy.CopyObject.builder()
                 .key("/tasks/move")

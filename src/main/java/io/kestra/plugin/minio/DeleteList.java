@@ -36,7 +36,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             code = """
                 id: minio_delete_objects
                 namespace: company.team
-                
+
                 tasks:
                   - id: delete_objects
                     type: io.kestra.plugin.minio.DeleteList
@@ -131,7 +131,7 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
     @Override
     public Output run(RunContext runContext) throws Exception {
         Logger logger = runContext.logger();
-        String bucket = runContext.render(this.bucket);
+        String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
 
         try (MinioClient client = this.client(runContext)) {
 
@@ -168,7 +168,7 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
             if (errorOnEmpty && finalResult.getLeft() == 0) {
                 throw new NoSuchElementException(
                     "Unable to find any files to delete on " +
-                        runContext.render(this.bucket) + " " +
+                        runContext.render(this.bucket).as(String.class).orElse(null) + " " +
                         "with regexp='" + runContext.render(this.regexp) + "', " +
                         "prefix='" + runContext.render(this.prefix) + "'"
                 );

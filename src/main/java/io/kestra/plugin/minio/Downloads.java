@@ -33,7 +33,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             code = """
                 id: minio_downloads
                 namespace: company.team
-                
+
                 tasks:
                   - id: downloads
                     type: io.kestra.plugin.minio.Downloads
@@ -154,7 +154,7 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
         io.kestra.plugin.minio.List.Output run = task.run(runContext);
 
         try (MinioAsyncClient client = this.asyncClient(runContext)) {
-            String bucket = runContext.render(this.bucket);
+            String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
 
             List<MinioObject> list = run
                 .getObjects()
@@ -181,7 +181,7 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
                 .map(object -> new AbstractMap.SimpleEntry<>(object.getKey(), object.getUri()))
                 .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
 
-            MinioService.performAction(runContext, list, action,bucket, this, moveTo);
+            MinioService.performAction(runContext, list, action, bucket, this, moveTo);
 
             return Output
                 .builder()

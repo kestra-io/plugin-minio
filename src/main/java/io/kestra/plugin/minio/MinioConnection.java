@@ -1,5 +1,6 @@
 package io.kestra.plugin.minio;
 
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.Task;
 import jakarta.annotation.Nullable;
 import lombok.EqualsAndHashCode;
@@ -15,12 +16,12 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 public abstract class MinioConnection extends Task implements MinioConnectionInterface {
 
-    protected String region;
+    protected Property<String> region;
 
-    protected String accessKeyId;
-    protected String secretKeyId;
+    protected Property<String> accessKeyId;
+    protected Property<String> secretKeyId;
 
-    protected String endpoint;
+    protected Property<String> endpoint;
 
     public record MinioClientConfig(
         @Nullable String accessKeyId,

@@ -23,7 +23,7 @@ import lombok.experimental.SuperBuilder;
             code = """
                 id: minio_delete
                 namespace: company.team
-                
+
                 tasks:
                   - id: delete
                     type: io.kestra.plugin.minio.Delete
@@ -72,7 +72,7 @@ public class Delete extends AbstractMinioObject implements RunnableTask<Delete.O
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String bucket = runContext.render(this.bucket);
+        String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
         String key = runContext.render(this.key);
 
         try (MinioClient minioClient = this.client(runContext)) {

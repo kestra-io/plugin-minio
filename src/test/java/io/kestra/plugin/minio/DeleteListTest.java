@@ -1,5 +1,6 @@
 package io.kestra.plugin.minio;
 
+import io.kestra.core.models.property.Property;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -19,10 +20,10 @@ public class DeleteListTest extends AbstractMinIoTest {
         DeleteList task = DeleteList.builder()
             .id(ListTest.class.getSimpleName())
             .type(List.class.getName())
-            .bucket(this.BUCKET)
-            .endpoint(minIOContainer.getS3URL())
-            .accessKeyId(minIOContainer.getUserName())
-            .secretKeyId(minIOContainer.getPassword())
+            .bucket(Property.of(this.BUCKET))
+            .endpoint(Property.of(minIOContainer.getS3URL()))
+            .accessKeyId(Property.of(minIOContainer.getUserName()))
+            .secretKeyId(Property.of(minIOContainer.getPassword()))
             .concurrent(5)
             .build();
 

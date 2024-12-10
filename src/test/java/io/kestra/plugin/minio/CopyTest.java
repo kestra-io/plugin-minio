@@ -1,5 +1,6 @@
 package io.kestra.plugin.minio;
 
+import io.kestra.core.models.property.Property;
 import io.kestra.core.utils.IdUtils;
 import org.junit.jupiter.api.Test;
 
@@ -17,13 +18,13 @@ public class CopyTest extends AbstractMinIoTest {
         Copy task = Copy.builder()
             .id(CopyTest.class.getSimpleName())
             .type(List.class.getName())
-            .endpoint(minIOContainer.getS3URL())
-            .accessKeyId(minIOContainer.getUserName())
-            .secretKeyId(minIOContainer.getPassword())
+            .endpoint(Property.of(minIOContainer.getS3URL()))
+            .accessKeyId(Property.of(minIOContainer.getUserName()))
+            .secretKeyId(Property.of(minIOContainer.getPassword()))
             .from(
                 Copy.CopyObjectFrom
                     .builder()
-                    .bucket(this.BUCKET)
+                    .bucket(Property.of(this.BUCKET))
                     .key(upload)
                     .build()
             )

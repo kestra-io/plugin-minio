@@ -4,6 +4,7 @@ import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.conditions.ConditionContext;
 import io.kestra.core.models.executions.Execution;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.triggers.*;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.utils.Rethrow;
@@ -39,7 +40,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             code = """
                 id: minio_listen
                 namespace: company.team
-                
+
                 tasks:
                   - id: each
                     type: io.kestra.plugin.core.flow.ForEach
@@ -48,7 +49,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                       - id: return
                         type: io.kestra.plugin.core.debug.Return
                         format: "{{ taskrun.value }}"
-                
+
                 triggers:
                   - id: watch
                     type: io.kestra.plugin.minio.Trigger
@@ -59,7 +60,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                     bucket: "my-bucket"
                     prefix: "sub-dir"
                     action: MOVE
-                    moveTo: 
+                    moveTo:
                       key: archive"
                 """
         ),
@@ -69,7 +70,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             code = """
                 id: minio_listen
                 namespace: company.team
-                
+
                 tasks:
                   - id: each
                     type: io.kestra.plugin.core.flow.ForEach
@@ -85,7 +86,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                         region: "eu-central-1"
                         bucket: "my-bucket"
                         key: "{{ taskrun.value }}"
-                
+
                 triggers:
                   - id: watch
                     type: io.kestra.plugin.minio.Trigger
@@ -112,7 +113,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                     - id: return
                       type: io.kestra.plugin.core.debug.Return
                       format: "{{ taskrun.value }}"
-              
+
               triggers:
                 - id: watch
                   type: io.kestra.plugin.minio.Trigger
@@ -123,7 +124,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                   bucket: "kestra-test-bucket"
                   prefix: "sub-dir"
                   action: MOVE
-                  moveTo: 
+                  moveTo:
                     key: archive
               """
         )
@@ -134,15 +135,15 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     @Builder.Default
     private final Duration interval = Duration.ofSeconds(60);
 
-    protected String accessKeyId;
+    protected Property<String> accessKeyId;
 
-    protected String secretKeyId;
+    protected Property<String> secretKeyId;
 
-    protected String region;
+    protected Property<String> region;
 
-    protected String endpoint;
+    protected Property<String> endpoint;
 
-    protected String bucket;
+    protected Property<String> bucket;
 
     private String prefix;
 
@@ -197,7 +198,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
             runContext,
             run.getObjects(),
             this.action,
-            this.bucket,
+            runContext.render(this.bucket).as(String.class).orElse(null),
             this,
             this.moveTo
         );

@@ -3,6 +3,7 @@ package io.kestra.plugin.minio;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.minio.model.ObjectOutput;
@@ -92,7 +93,7 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
     public Output run(RunContext runContext) throws Exception {
         try (MinioClient minioClient = this.client(runContext)) {
             CopySource.Builder sourceBuilder = CopySource.builder()
-                .bucket(runContext.render(this.from.bucket))
+                .bucket(runContext.render(this.from.bucket).as(String.class).orElse(null))
                 .object(runContext.render(this.from.key));
 
             if (this.from.versionId != null) {
@@ -100,7 +101,7 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
             }
 
             CopyObjectArgs.Builder builder = CopyObjectArgs.builder()
-                .bucket(runContext.render(this.to.bucket != null ? this.to.bucket : this.from.bucket))
+                .bucket(runContext.render(this.to.bucket != null ? this.to.bucket : this.from.bucket).as(String.class).orElseThrow())
                 .object(runContext.render(this.to.key))
                 .source(sourceBuilder.build());
 
@@ -138,8 +139,7 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
         @Schema(
             title = "The bucket name"
         )
-        @PluginProperty(dynamic = true)
-        String bucket;
+        Property<String> bucket;
 
         @Schema(
             title = "The bucket key"

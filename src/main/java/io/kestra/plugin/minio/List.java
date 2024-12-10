@@ -33,7 +33,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             code = """
                 id: minio_list
                 namespace: company.team
-                
+
                 tasks:
                   - id: list_objects
                     type: io.kestra.plugin.minio.List
@@ -154,7 +154,7 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String bucket = runContext.render(this.bucket);
+        String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
 
         try (MinioClient client = this.client(runContext)) {
             ListObjectsArgs.Builder requestBuilder = ListObjectsArgs
