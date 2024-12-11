@@ -145,21 +145,21 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
 
     protected Property<String> bucket;
 
-    private String prefix;
+    private Property<String> prefix;
 
-    private String delimiter;
+    private Property<String> delimiter;
 
-    private String marker;
-
-    @Builder.Default
-    private Integer maxKeys = 1000;
-
-    protected String regexp;
+    private Property<String> marker;
 
     @Builder.Default
-    protected final List.Filter filter = List.Filter.BOTH;
+    private Property<Integer> maxKeys = Property.of(1000);
 
-    private Downloads.Action action;
+    protected Property<String> regexp;
+
+    @Builder.Default
+    protected final Property<List.Filter> filter = Property.of(List.Filter.BOTH);
+
+    private Property<Downloads.Action> action;
 
     private Copy.CopyObject moveTo;
 
@@ -197,7 +197,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
         MinioService.performAction(
             runContext,
             run.getObjects(),
-            this.action,
+            runContext.render(this.action).as(Downloads.Action.class).orElseThrow(),
             runContext.render(this.bucket).as(String.class).orElse(null),
             this,
             this.moveTo
@@ -223,7 +223,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
                 .accessKeyId(this.accessKeyId)
                 .secretKeyId(this.secretKeyId)
                 .bucket(this.bucket)
-                .key(object.getKey())
+                .key(Property.of(object.getKey()))
                 .build();
             Download.Output downloadOutput = download.run(runContext);
 

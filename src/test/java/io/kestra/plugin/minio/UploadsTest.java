@@ -41,7 +41,7 @@ public class UploadsTest extends AbstractMinIoTest {
             .endpoint(Property.of(minIOContainer.getS3URL()))
             .accessKeyId(Property.of(minIOContainer.getUserName()))
             .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .prefix(result.getKey())
+            .prefix(Property.of(result.getKey()))
             .build();
 
         List.Output output = list.run(runContext(list));

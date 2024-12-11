@@ -85,7 +85,6 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
     @Schema(
         title = "Whether to delete the source file after download."
     )
-    @PluginProperty
     @Builder.Default
     private Property<Boolean> delete = Property.of(false);
 

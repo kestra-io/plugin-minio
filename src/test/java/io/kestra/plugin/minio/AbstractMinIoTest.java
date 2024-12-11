@@ -123,7 +123,7 @@ public class AbstractMinIoTest {
             .accessKeyId(Property.of(minIOContainer.getUserName()))
             .secretKeyId(Property.of(minIOContainer.getPassword()))
             .bucket(Property.of(this.BUCKET))
-            .includeVersions(true);
+            .includeVersions(Property.of(true));
     }
 
     protected RunContext runContext(Task task) {

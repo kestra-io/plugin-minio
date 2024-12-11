@@ -58,7 +58,7 @@ public class MinioService {
                     .to(moveTo.toBuilder()
                         .key(Property.of(
                             "%s/%s".formatted(
-                                StringUtils.stripEnd(moveTo.getKey() + "/", "/"),
+                                StringUtils.stripEnd(runContext.render(moveTo.getKey()).as(String.class).orElse(null) + "/", "/"),
                                 FilenameUtils.getName(object.getKey())
                             )
                         ))

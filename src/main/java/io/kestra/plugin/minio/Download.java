@@ -4,6 +4,7 @@ import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.utils.FileUtils;
@@ -71,22 +72,20 @@ public class Download extends AbstractMinioObject implements RunnableTask<Downlo
     @Schema(
         title = "The key of a file to download."
     )
-    @PluginProperty(dynamic = true)
-    private String key;
+    private Property<String> key;
 
     @Schema(
         title = "The specific version of the object."
     )
-    @PluginProperty(dynamic = true)
-    protected String versionId;
+    protected Property<String> versionId;
 
     @Override
     public Output run(RunContext runContext) throws Exception {
         String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
-        String key = runContext.render(this.key);
+        String key = runContext.render(this.key).as(String.class).orElse(null);
 
         try (MinioAsyncClient client = this.asyncClient(runContext)) {
-            Pair<URI, Long> output = MinioService.download(runContext, client, bucket, key, this.versionId);
+            Pair<URI, Long> output = MinioService.download(runContext, client, bucket, key, runContext.render(this.versionId).as(String.class).orElse(null));
 
             long length = output.getRight();
             URI uri = output.getLeft();

@@ -40,12 +40,12 @@ public class CopyTest extends AbstractMinIoTest {
         Copy.Output copyOutput = task.run(runContext(task));
         assertThat(copyOutput.getKey(), is(move));
 
-        List list = list().prefix(move).build();
+        List list = list().prefix(Property.of(move)).build();
 
         List.Output listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(1));
 
-        list = list().prefix(upload).build();
+        list = list().prefix(Property.of(upload)).build();
 
         listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(delete ? 0 : 1));

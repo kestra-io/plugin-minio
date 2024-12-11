@@ -1,5 +1,6 @@
 package io.kestra.plugin.minio;
 
+import io.kestra.core.models.property.Property;
 import io.kestra.core.utils.IdUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
@@ -26,26 +27,26 @@ public class ListTest extends AbstractMinIoTest {
         assertThat(output.getObjects().size(), is(6));
 
         task = list()
-            .filter(List.Filter.FILES)
-            .prefix("tasks/"+dir+"/")
+            .filter(Property.of(List.Filter.FILES))
+            .prefix(Property.of("tasks/"+dir+"/"))
             .build();
         output = task.run(runContext(task));
         assertThat(output.getObjects().size(), is(6));
 
         task = list()
-            .filter(List.Filter.FILES)
+            .filter(Property.of(List.Filter.FILES))
             .build();
         output = task.run(runContext(task));
         assertThat(output.getObjects().size(), is(6));
 
         task = list()
-            .prefix("tasks/%s/sub".formatted(dir))
+            .prefix(Property.of("tasks/%s/sub".formatted(dir)))
             .build();
         output = task.run(runContext(task));
         assertThat(output.getObjects().size(), is(1));
 
         task = list()
-            .regexp("tasks/.*/" + StringUtils.substringAfterLast(lastFileName, "/"))
+            .regexp(Property.of("tasks/.*/" + StringUtils.substringAfterLast(lastFileName, "/")))
             .build();
         output = task.run(runContext(task));
         assertThat(output.getObjects().size(), is(1));

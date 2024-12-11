@@ -25,7 +25,7 @@ public class DownloadsTest extends AbstractMinIoTest {
             .endpoint(Property.of(minIOContainer.getS3URL()))
             .accessKeyId(Property.of(minIOContainer.getUserName()))
             .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .action(Downloads.Action.DELETE)
+            .action(Property.of(Downloads.Action.DELETE))
             .build();
 
         Downloads.Output run = task.run(runContext(task));
@@ -53,7 +53,7 @@ public class DownloadsTest extends AbstractMinIoTest {
             .endpoint(Property.of(minIOContainer.getS3URL()))
             .accessKeyId(Property.of(minIOContainer.getUserName()))
             .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .action(Downloads.Action.MOVE)
+            .action(Property.of(Downloads.Action.MOVE))
             .moveTo(Copy.CopyObject.builder()
                 .key(Property.of("/tasks/move"))
                 .build()
@@ -65,11 +65,13 @@ public class DownloadsTest extends AbstractMinIoTest {
         assertThat(run.getObjects().size(), is(2));
         assertThat(run.getOutputFiles().size(), is(2));
 
-        List list = list().prefix("tasks/from").build();
+        List list = list().prefix(Property.of("tasks/from"))
+            .build();
         List.Output listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(0));
 
-        list = list().prefix("tasks/move").build();
+        list = list().prefix(Property.of("tasks/move"))
+            .build();
         listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(2));
     }

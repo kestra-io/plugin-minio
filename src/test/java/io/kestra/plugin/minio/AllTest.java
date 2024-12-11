@@ -31,7 +31,7 @@ public class AllTest extends AbstractMinIoTest {
             .endpoint(Property.of(minIOContainer.getS3URL()))
             .accessKeyId(Property.of(minIOContainer.getUserName()))
             .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .prefix("tasks/upload/")
+            .prefix(Property.of("tasks/upload/"))
             .build();
 
         List.Output listOutput = list.run(runContext(list));
@@ -45,7 +45,7 @@ public class AllTest extends AbstractMinIoTest {
             .endpoint(Property.of(minIOContainer.getS3URL()))
             .accessKeyId(Property.of(minIOContainer.getUserName()))
             .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .key(key)
+            .key(Property.of(key))
             .build();
 
         Download.Output downloadOutput = download.run(runContext(download));
