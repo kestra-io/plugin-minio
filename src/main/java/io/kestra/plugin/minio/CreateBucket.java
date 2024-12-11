@@ -3,6 +3,7 @@ package io.kestra.plugin.minio;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.minio.BucketExistsArgs;
@@ -61,12 +62,11 @@ public class CreateBucket extends AbstractMinioObject implements RunnableTask<Cr
     @Schema(
         title = "Specifies whether you want Object Lock to be enabled for the new bucket."
     )
-    @PluginProperty
-    private Boolean objectLockEnabledForBucket;
+    private Property<Boolean> objectLockEnabledForBucket;
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String bucket = runContext.render(this.bucket);
+        String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
 
         try (MinioClient client = this.client(runContext)) {
 
@@ -81,7 +81,7 @@ public class CreateBucket extends AbstractMinioObject implements RunnableTask<Cr
             MakeBucketArgs.Builder requestBuilder = MakeBucketArgs.builder().bucket(bucket);
 
             if (this.objectLockEnabledForBucket != null) {
-                requestBuilder.objectLock(objectLockEnabledForBucket);
+                requestBuilder.objectLock(runContext.render(objectLockEnabledForBucket).as(Boolean.class).orElseThrow());
             }
 
             client.makeBucket(requestBuilder.build());

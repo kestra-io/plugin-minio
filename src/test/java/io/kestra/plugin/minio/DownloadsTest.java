@@ -1,5 +1,6 @@
 package io.kestra.plugin.minio;
 
+import io.kestra.core.models.property.Property;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -20,11 +21,11 @@ public class DownloadsTest extends AbstractMinIoTest {
         Downloads task = Downloads.builder()
             .id(DownloadsTest.class.getSimpleName())
             .type(Downloads.class.getName())
-            .bucket(this.BUCKET)
-            .endpoint(minIOContainer.getS3URL())
-            .accessKeyId(minIOContainer.getUserName())
-            .secretKeyId(minIOContainer.getPassword())
-            .action(Downloads.Action.DELETE)
+            .bucket(Property.of(this.BUCKET))
+            .endpoint(Property.of(minIOContainer.getS3URL()))
+            .accessKeyId(Property.of(minIOContainer.getUserName()))
+            .secretKeyId(Property.of(minIOContainer.getPassword()))
+            .action(Property.of(Downloads.Action.DELETE))
             .build();
 
         Downloads.Output run = task.run(runContext(task));
@@ -48,13 +49,13 @@ public class DownloadsTest extends AbstractMinIoTest {
         Downloads task = Downloads.builder()
             .id(DownloadsTest.class.getSimpleName())
             .type(Downloads.class.getName())
-            .bucket("{{bucket}}")
-            .endpoint(minIOContainer.getS3URL())
-            .accessKeyId(minIOContainer.getUserName())
-            .secretKeyId(minIOContainer.getPassword())
-            .action(Downloads.Action.MOVE)
+            .bucket(new Property<>("{{bucket}}"))
+            .endpoint(Property.of(minIOContainer.getS3URL()))
+            .accessKeyId(Property.of(minIOContainer.getUserName()))
+            .secretKeyId(Property.of(minIOContainer.getPassword()))
+            .action(Property.of(Downloads.Action.MOVE))
             .moveTo(Copy.CopyObject.builder()
-                .key("/tasks/move")
+                .key(Property.of("/tasks/move"))
                 .build()
             )
             .build();
@@ -64,11 +65,13 @@ public class DownloadsTest extends AbstractMinIoTest {
         assertThat(run.getObjects().size(), is(2));
         assertThat(run.getOutputFiles().size(), is(2));
 
-        List list = list().prefix("tasks/from").build();
+        List list = list().prefix(Property.of("tasks/from"))
+            .build();
         List.Output listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(0));
 
-        list = list().prefix("tasks/move").build();
+        list = list().prefix(Property.of("tasks/move"))
+            .build();
         listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(2));
     }

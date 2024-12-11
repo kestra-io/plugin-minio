@@ -1,6 +1,7 @@
 package io.kestra.plugin.minio;
 
 import io.kestra.core.models.annotations.PluginProperty;
+import io.kestra.core.models.property.Property;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -18,7 +19,6 @@ public abstract class AbstractMinioObject extends MinioConnection implements Abs
     @Schema(
         title = "The bucket name."
     )
-    @PluginProperty(dynamic = true)
-    protected String bucket;
+    protected Property<String> bucket;
 
 }

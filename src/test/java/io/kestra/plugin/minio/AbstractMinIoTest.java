@@ -1,6 +1,7 @@
 package io.kestra.plugin.minio;
 
 import io.kestra.core.junit.annotations.KestraTest;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.Task;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
@@ -70,10 +71,10 @@ public class AbstractMinIoTest {
         CreateBucket createBucket = CreateBucket.builder()
             .id(AllTest.class.getSimpleName())
             .type(CreateBucket.class.getName())
-            .endpoint(minIOContainer.getS3URL())
-            .accessKeyId(minIOContainer.getUserName())
-            .secretKeyId(minIOContainer.getPassword())
-            .bucket(bucket)
+            .endpoint(Property.of(minIOContainer.getS3URL()))
+            .accessKeyId(Property.of(minIOContainer.getUserName()))
+            .secretKeyId(Property.of(minIOContainer.getPassword()))
+            .bucket(Property.of(bucket))
             .build();
 
         CreateBucket.Output createOutput = createBucket.run(runContext(createBucket));
@@ -101,12 +102,12 @@ public class AbstractMinIoTest {
         Upload upload = Upload.builder()
             .id(AllTest.class.getSimpleName())
             .type(Upload.class.getName())
-            .endpoint(minIOContainer.getS3URL())
-            .accessKeyId(minIOContainer.getUserName())
-            .secretKeyId(minIOContainer.getPassword())
-            .bucket(bucket)
+            .endpoint(Property.of(minIOContainer.getS3URL()))
+            .accessKeyId(Property.of(minIOContainer.getUserName()))
+            .secretKeyId(Property.of(minIOContainer.getPassword()))
+            .bucket(Property.of(bucket))
             .from(source.toString())
-            .key(dir + "/" + out + ".yml")
+            .key(Property.of(dir + "/" + out + ".yml"))
             .build();
 
         Upload.Output output = upload.run(runContext(upload));
@@ -118,11 +119,11 @@ public class AbstractMinIoTest {
         return List.builder()
             .id(ListTest.class.getSimpleName())
             .type(List.class.getName())
-            .endpoint(minIOContainer.getS3URL())
-            .accessKeyId(minIOContainer.getUserName())
-            .secretKeyId(minIOContainer.getPassword())
-            .bucket(this.BUCKET)
-            .includeVersions(true);
+            .endpoint(Property.of(minIOContainer.getS3URL()))
+            .accessKeyId(Property.of(minIOContainer.getUserName()))
+            .secretKeyId(Property.of(minIOContainer.getPassword()))
+            .bucket(Property.of(this.BUCKET))
+            .includeVersions(Property.of(true));
     }
 
     protected RunContext runContext(Task task) {

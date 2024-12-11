@@ -3,6 +3,7 @@ package io.kestra.plugin.minio;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.minio.MinioClient;
@@ -23,7 +24,7 @@ import lombok.experimental.SuperBuilder;
             code = """
                 id: minio_delete
                 namespace: company.team
-                
+
                 tasks:
                   - id: delete
                     type: io.kestra.plugin.minio.Delete
@@ -61,19 +62,18 @@ public class Delete extends AbstractMinioObject implements RunnableTask<Delete.O
     @Schema(
         title = "The key to delete."
     )
-    @PluginProperty(dynamic = true)
-    private String key;
+    private Property<String> key;
 
     @Schema(
         title = "Indicates whether Object Lock should bypass Governance-mode restrictions to process this operation."
     )
     @PluginProperty
-    private Boolean bypassGovernanceRetention;
+    private Property<Boolean> bypassGovernanceRetention;
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String bucket = runContext.render(this.bucket);
-        String key = runContext.render(this.key);
+        String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
+        String key = runContext.render(this.key).as(String.class).orElse(null);
 
         try (MinioClient minioClient = this.client(runContext)) {
             RemoveObjectArgs.Builder builder = RemoveObjectArgs.builder()
@@ -81,7 +81,7 @@ public class Delete extends AbstractMinioObject implements RunnableTask<Delete.O
                 .object(key);
 
             if (this.bypassGovernanceRetention != null) {
-                builder.bypassGovernanceMode(this.bypassGovernanceRetention);
+                builder.bypassGovernanceMode(runContext.render(this.bypassGovernanceRetention).as(Boolean.class).orElseThrow());
             }
 
             RemoveObjectArgs request = builder.build();

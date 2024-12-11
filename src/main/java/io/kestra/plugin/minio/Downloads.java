@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.minio.model.MinioObject;
@@ -33,7 +34,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             code = """
                 id: minio_downloads
                 namespace: company.team
-                
+
                 tasks:
                   - id: downloads
                     type: io.kestra.plugin.minio.Downloads
@@ -79,29 +80,25 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
     @Schema(
         title = "Limits the response to keys that begin with the specified prefix."
     )
-    @PluginProperty(dynamic = true)
-    private String prefix;
+    private Property<String> prefix;
 
     @Schema(
         title = "A delimiter is a character you use to group keys."
     )
-    @PluginProperty(dynamic = true)
-    private String delimiter;
+    private Property<String> delimiter;
 
     @Schema(
         title = "Marker is where you want to start listing from.",
         description = "Start listing after this specified key. Marker can be any key in the bucket."
     )
-    @PluginProperty(dynamic = true)
-    private String marker;
+    private Property<String> marker;
 
     @Schema(
         title = "Sets the maximum number of keys returned in the response.",
         description = "By default, the action returns up to 1,000 key names. The response might contain fewer keys but will never contain more."
     )
-    @PluginProperty(dynamic = true)
     @Builder.Default
-    private Integer maxKeys = 1000;
+    private Property<Integer> maxKeys = Property.of(1000);
 
     @Schema(
         title = "A regexp to filter on full key.",
@@ -109,22 +106,19 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
             "`regExp: .*` to match all files\n"+
             "`regExp: .*2020-01-0.\\\\.csv` to match files between 01 and 09 of january ending with `.csv`"
     )
-    @PluginProperty(dynamic = true)
-    protected String regexp;
+    protected Property<String> regexp;
 
     @Schema(
         title = "The type of objects to filter: files, directory, or both."
     )
-    @PluginProperty
     @Builder.Default
-    protected final io.kestra.plugin.minio.List.Filter filter = io.kestra.plugin.minio.List.Filter.BOTH;
+    protected final Property<io.kestra.plugin.minio.List.Filter> filter = Property.of(io.kestra.plugin.minio.List.Filter.BOTH);
 
     @Schema(
         title = "The action to perform on the retrieved files. If using 'NONE' make sure to handle the files inside your flow to avoid infinite triggering."
     )
-    @PluginProperty(dynamic = true)
     @NotNull
-    private Action action;
+    private Property<Action> action;
 
     @Schema(
         title = "The destination bucket and key for `MOVE` action."
@@ -154,7 +148,7 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
         io.kestra.plugin.minio.List.Output run = task.run(runContext);
 
         try (MinioAsyncClient client = this.asyncClient(runContext)) {
-            String bucket = runContext.render(this.bucket);
+            String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
 
             List<MinioObject> list = run
                 .getObjects()
@@ -181,7 +175,7 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
                 .map(object -> new AbstractMap.SimpleEntry<>(object.getKey(), object.getUri()))
                 .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
 
-            MinioService.performAction(runContext, list, action,bucket, this, moveTo);
+            MinioService.performAction(runContext, list, runContext.render(action).as(Action.class).orElseThrow(), bucket, this, moveTo);
 
             return Output
                 .builder()

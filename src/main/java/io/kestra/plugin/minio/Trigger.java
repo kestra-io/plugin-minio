@@ -4,6 +4,7 @@ import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.conditions.ConditionContext;
 import io.kestra.core.models.executions.Execution;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.triggers.*;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.utils.Rethrow;
@@ -39,7 +40,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             code = """
                 id: minio_listen
                 namespace: company.team
-                
+
                 tasks:
                   - id: each
                     type: io.kestra.plugin.core.flow.ForEach
@@ -48,7 +49,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                       - id: return
                         type: io.kestra.plugin.core.debug.Return
                         format: "{{ taskrun.value }}"
-                
+
                 triggers:
                   - id: watch
                     type: io.kestra.plugin.minio.Trigger
@@ -59,7 +60,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                     bucket: "my-bucket"
                     prefix: "sub-dir"
                     action: MOVE
-                    moveTo: 
+                    moveTo:
                       key: archive"
                 """
         ),
@@ -69,7 +70,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             code = """
                 id: minio_listen
                 namespace: company.team
-                
+
                 tasks:
                   - id: each
                     type: io.kestra.plugin.core.flow.ForEach
@@ -85,7 +86,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                         region: "eu-central-1"
                         bucket: "my-bucket"
                         key: "{{ taskrun.value }}"
-                
+
                 triggers:
                   - id: watch
                     type: io.kestra.plugin.minio.Trigger
@@ -112,7 +113,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                     - id: return
                       type: io.kestra.plugin.core.debug.Return
                       format: "{{ taskrun.value }}"
-              
+
               triggers:
                 - id: watch
                   type: io.kestra.plugin.minio.Trigger
@@ -123,7 +124,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                   bucket: "kestra-test-bucket"
                   prefix: "sub-dir"
                   action: MOVE
-                  moveTo: 
+                  moveTo:
                     key: archive
               """
         )
@@ -134,31 +135,31 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     @Builder.Default
     private final Duration interval = Duration.ofSeconds(60);
 
-    protected String accessKeyId;
+    protected Property<String> accessKeyId;
 
-    protected String secretKeyId;
+    protected Property<String> secretKeyId;
 
-    protected String region;
+    protected Property<String> region;
 
-    protected String endpoint;
+    protected Property<String> endpoint;
 
-    protected String bucket;
+    protected Property<String> bucket;
 
-    private String prefix;
+    private Property<String> prefix;
 
-    private String delimiter;
+    private Property<String> delimiter;
 
-    private String marker;
-
-    @Builder.Default
-    private Integer maxKeys = 1000;
-
-    protected String regexp;
+    private Property<String> marker;
 
     @Builder.Default
-    protected final List.Filter filter = List.Filter.BOTH;
+    private Property<Integer> maxKeys = Property.of(1000);
 
-    private Downloads.Action action;
+    protected Property<String> regexp;
+
+    @Builder.Default
+    protected final Property<List.Filter> filter = Property.of(List.Filter.BOTH);
+
+    private Property<Downloads.Action> action;
 
     private Copy.CopyObject moveTo;
 
@@ -196,8 +197,8 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
         MinioService.performAction(
             runContext,
             run.getObjects(),
-            this.action,
-            this.bucket,
+            runContext.render(this.action).as(Downloads.Action.class).orElseThrow(),
+            runContext.render(this.bucket).as(String.class).orElse(null),
             this,
             this.moveTo
         );
@@ -222,7 +223,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
                 .accessKeyId(this.accessKeyId)
                 .secretKeyId(this.secretKeyId)
                 .bucket(this.bucket)
-                .key(object.getKey())
+                .key(Property.of(object.getKey()))
                 .build();
             Download.Output downloadOutput = download.run(runContext);
 

@@ -4,6 +4,7 @@ import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.minio.model.MinioObject;
@@ -36,7 +37,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             code = """
                 id: minio_delete_objects
                 namespace: company.team
-                
+
                 tasks:
                   - id: delete_objects
                     type: io.kestra.plugin.minio.DeleteList
@@ -74,29 +75,25 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
     @Schema(
         title = "Limits the response to keys that begin with the specified prefix."
     )
-    @PluginProperty(dynamic = true)
-    private String prefix;
+    private Property<String> prefix;
 
     @Schema(
         title = "A delimiter is a character you use to group keys."
     )
-    @PluginProperty(dynamic = true)
-    private String delimiter;
+    private Property<String> delimiter;
 
     @Schema(
         title = "Marker is where you want to start listing from.",
         description = "Start listing after this specified key. Marker can be any key in the bucket."
     )
-    @PluginProperty(dynamic = true)
-    private String marker;
+    private Property<String> marker;
 
     @Schema(
         title = "Sets the maximum number of keys returned in the response.",
         description = "By default, the action returns up to 1,000 key names. The response might contain fewer keys but will never contain more."
     )
-    @PluginProperty(dynamic = true)
     @Builder.Default
-    private Integer maxKeys = 1000;
+    private Property<Integer> maxKeys = Property.of(1000);
 
     @Schema(
         title = "A regexp to filter on full key.",
@@ -104,15 +101,13 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
             "`regExp: .*` to match all files\n"+
             "`regExp: .*2020-01-0.\\\\.csv` to match files between 01 and 09 of january ending with `.csv`"
     )
-    @PluginProperty(dynamic = true)
-    protected String regexp;
+    protected Property<String> regexp;
 
     @Schema(
         title = "The type of objects to filter: files, directory, or both."
     )
-    @PluginProperty
     @Builder.Default
-    protected final List.Filter filter = List.Filter.BOTH;
+    protected final Property<List.Filter> filter = Property.of(List.Filter.BOTH);
 
     @Min(2)
     @Schema(
@@ -124,14 +119,13 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
     @Schema(
         title = "raise an error if the file is not found"
     )
-    @PluginProperty
     @Builder.Default
-    private final Boolean errorOnEmpty = false;
+    private final Property<Boolean> errorOnEmpty = Property.of(false);
 
     @Override
     public Output run(RunContext runContext) throws Exception {
         Logger logger = runContext.logger();
-        String bucket = runContext.render(this.bucket);
+        String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
 
         try (MinioClient client = this.client(runContext)) {
 
@@ -165,10 +159,10 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
             runContext.metric(Counter.of("count", finalResult.getLeft()));
             runContext.metric(Counter.of("size", finalResult.getRight()));
 
-            if (errorOnEmpty && finalResult.getLeft() == 0) {
+            if (runContext.render(errorOnEmpty).as(Boolean.class).orElseThrow() && finalResult.getLeft() == 0) {
                 throw new NoSuchElementException(
                     "Unable to find any files to delete on " +
-                        runContext.render(this.bucket) + " " +
+                        runContext.render(this.bucket).as(String.class).orElse(null) + " " +
                         "with regexp='" + runContext.render(this.regexp) + "', " +
                         "prefix='" + runContext.render(this.prefix) + "'"
                 );

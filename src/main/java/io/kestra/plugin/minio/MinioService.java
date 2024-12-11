@@ -1,6 +1,7 @@
 package io.kestra.plugin.minio;
 
 import io.kestra.core.models.executions.metrics.Counter;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.utils.FileUtils;
 import io.kestra.plugin.minio.model.MinioObject;
@@ -32,8 +33,8 @@ public class MinioService {
                     .region(minioConnection.getRegion())
                     .accessKeyId(minioConnection.getAccessKeyId())
                     .secretKeyId(minioConnection.getSecretKeyId())
-                    .key(object.getKey())
-                    .bucket(bucket)
+                    .key(Property.of(object.getKey()))
+                    .bucket(Property.of(bucket))
                     .endpoint(minioConnection.getEndpoint())
                     .build();
                 delete.run(runContext);
@@ -50,20 +51,20 @@ public class MinioService {
                     .from(
                         Copy.CopyObjectFrom
                             .builder()
-                            .bucket(bucket)
-                            .key(object.getKey())
+                            .bucket(Property.of(bucket))
+                            .key(Property.of(object.getKey()))
                             .build()
                     )
                     .to(moveTo.toBuilder()
-                        .key(
+                        .key(Property.of(
                             "%s/%s".formatted(
-                                StringUtils.stripEnd(moveTo.getKey() + "/", "/"),
+                                StringUtils.stripEnd(runContext.render(moveTo.getKey()).as(String.class).orElse(null) + "/", "/"),
                                 FilenameUtils.getName(object.getKey())
                             )
-                        )
+                        ))
                         .build()
                     )
-                    .delete(true)
+                    .delete(Property.of(true))
                     .build();
                 copy.run(runContext);
             }

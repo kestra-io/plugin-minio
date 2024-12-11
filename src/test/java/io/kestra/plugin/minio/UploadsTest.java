@@ -1,5 +1,6 @@
 package io.kestra.plugin.minio;
 
+import io.kestra.core.models.property.Property;
 import io.kestra.core.utils.IdUtils;
 import org.junit.jupiter.api.Test;
 
@@ -23,24 +24,24 @@ public class UploadsTest extends AbstractMinIoTest {
             .builder()
             .id(AllTest.class.getSimpleName())
             .type(Upload.class.getName())
-            .bucket(this.BUCKET)
-            .endpoint(minIOContainer.getS3URL())
-            .accessKeyId(minIOContainer.getUserName())
-            .secretKeyId(minIOContainer.getPassword())
+            .bucket(Property.of(this.BUCKET))
+            .endpoint(Property.of(minIOContainer.getS3URL()))
+            .accessKeyId(Property.of(minIOContainer.getUserName()))
+            .secretKeyId(Property.of(minIOContainer.getPassword()))
             .from(java.util.List.of(source1.toString(), source2.toString(), source3.toString(), source4.toString()))
-            .key(IdUtils.create() + "/")
+            .key(Property.of(IdUtils.create() + "/"))
             .build();
-        upload.run(runContext(upload));
+        var result = upload.run(runContext(upload));
 
         List list = List
             .builder()
             .id(AllTest.class.getSimpleName())
             .type(List.class.getName())
-            .bucket(this.BUCKET)
-            .endpoint(minIOContainer.getS3URL())
-            .accessKeyId(minIOContainer.getUserName())
-            .secretKeyId(minIOContainer.getPassword())
-            .prefix(upload.getKey())
+            .bucket(Property.of(this.BUCKET))
+            .endpoint(Property.of(minIOContainer.getS3URL()))
+            .accessKeyId(Property.of(minIOContainer.getUserName()))
+            .secretKeyId(Property.of(minIOContainer.getPassword()))
+            .prefix(Property.of(result.getKey()))
             .build();
 
         List.Output output = list.run(runContext(list));

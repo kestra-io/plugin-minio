@@ -1,5 +1,6 @@
 package io.kestra.plugin.minio;
 
+import io.kestra.core.models.property.Property;
 import io.kestra.core.utils.IdUtils;
 import org.junit.jupiter.api.Test;
 
@@ -17,34 +18,34 @@ public class CopyTest extends AbstractMinIoTest {
         Copy task = Copy.builder()
             .id(CopyTest.class.getSimpleName())
             .type(List.class.getName())
-            .endpoint(minIOContainer.getS3URL())
-            .accessKeyId(minIOContainer.getUserName())
-            .secretKeyId(minIOContainer.getPassword())
+            .endpoint(Property.of(minIOContainer.getS3URL()))
+            .accessKeyId(Property.of(minIOContainer.getUserName()))
+            .secretKeyId(Property.of(minIOContainer.getPassword()))
             .from(
                 Copy.CopyObjectFrom
                     .builder()
-                    .bucket(this.BUCKET)
-                    .key(upload)
+                    .bucket(Property.of(this.BUCKET))
+                    .key(Property.of(upload))
                     .build()
             )
             .to(
                 Copy.CopyObject
                     .builder()
-                    .key(move)
+                    .key(Property.of(move))
                     .build()
             )
-            .delete(delete)
+            .delete(Property.of(delete))
             .build();
 
         Copy.Output copyOutput = task.run(runContext(task));
         assertThat(copyOutput.getKey(), is(move));
 
-        List list = list().prefix(move).build();
+        List list = list().prefix(Property.of(move)).build();
 
         List.Output listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(1));
 
-        list = list().prefix(upload).build();
+        list = list().prefix(Property.of(upload)).build();
 
         listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(delete ? 0 : 1));
