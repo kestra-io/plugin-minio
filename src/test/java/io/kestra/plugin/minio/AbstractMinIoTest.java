@@ -107,7 +107,7 @@ public class AbstractMinIoTest {
             .secretKeyId(Property.of(minIOContainer.getPassword()))
             .bucket(Property.of(bucket))
             .from(source.toString())
-            .key(dir + "/" + out + ".yml")
+            .key(Property.of(dir + "/" + out + ".yml"))
             .build();
 
         Upload.Output output = upload.run(runContext(upload));

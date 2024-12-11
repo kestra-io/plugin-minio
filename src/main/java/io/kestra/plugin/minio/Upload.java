@@ -4,6 +4,7 @@ import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.serializers.JacksonMapper;
@@ -91,8 +92,7 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
         title = "The key where to upload the file.",
         description = "a full key (with filename) or the directory path if from is multiple files."
     )
-    @PluginProperty(dynamic = true)
-    private String key;
+    private Property<String> key;
 
     @Schema(
         title = "The file(s) to upload.",
@@ -105,19 +105,17 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     @Schema(
         title = "A standard MIME type describing the format of the contents."
     )
-    @PluginProperty(dynamic = true)
-    private String contentType;
+    private Property<String> contentType;
 
     @Schema(
         title = "A map of metadata to store with the object."
     )
-    @PluginProperty(dynamic = true)
-    private Map<String, String> metadata;
+    private Property<Map<String, String>> metadata;
 
     @Override
     public Output run(RunContext runContext) throws Exception {
         String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
-        String key = runContext.render(this.key);
+        String key = runContext.render(this.key).as(String.class).orElse(null);
 
         String[] renderedFroms;
         if (this.from instanceof Collection<?> fromURIs) {
@@ -133,12 +131,13 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
                 .bucket(bucket)
                 .object(key);
 
-            if (this.metadata != null) {
-                builder.userMetadata(runContext.renderMap(this.metadata));
+            var metadataValue = runContext.render(this.metadata).asMap(String.class, String.class);
+            if (!metadataValue.isEmpty()) {
+                builder.userMetadata(metadataValue);
             }
 
             if (this.contentType != null) {
-                builder.contentType(runContext.render(this.contentType));
+                builder.contentType(runContext.render(this.contentType).as(String.class).orElseThrow());
             }
 
             for (String renderedFrom : renderedFroms) {

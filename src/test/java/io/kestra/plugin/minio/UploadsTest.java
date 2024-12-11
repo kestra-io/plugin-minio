@@ -29,9 +29,9 @@ public class UploadsTest extends AbstractMinIoTest {
             .accessKeyId(Property.of(minIOContainer.getUserName()))
             .secretKeyId(Property.of(minIOContainer.getPassword()))
             .from(java.util.List.of(source1.toString(), source2.toString(), source3.toString(), source4.toString()))
-            .key(IdUtils.create() + "/")
+            .key(Property.of(IdUtils.create() + "/"))
             .build();
-        upload.run(runContext(upload));
+        var result = upload.run(runContext(upload));
 
         List list = List
             .builder()
@@ -41,7 +41,7 @@ public class UploadsTest extends AbstractMinIoTest {
             .endpoint(Property.of(minIOContainer.getS3URL()))
             .accessKeyId(Property.of(minIOContainer.getUserName()))
             .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .prefix(upload.getKey())
+            .prefix(result.getKey())
             .build();
 
         List.Output output = list.run(runContext(list));
