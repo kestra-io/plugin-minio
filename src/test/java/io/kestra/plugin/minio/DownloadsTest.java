@@ -55,7 +55,7 @@ public class DownloadsTest extends AbstractMinIoTest {
             .secretKeyId(Property.of(minIOContainer.getPassword()))
             .action(Downloads.Action.MOVE)
             .moveTo(Copy.CopyObject.builder()
-                .key("/tasks/move")
+                .key(Property.of("/tasks/move"))
                 .build()
             )
             .build();

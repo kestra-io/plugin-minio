@@ -25,16 +25,16 @@ public class CopyTest extends AbstractMinIoTest {
                 Copy.CopyObjectFrom
                     .builder()
                     .bucket(Property.of(this.BUCKET))
-                    .key(upload)
+                    .key(Property.of(upload))
                     .build()
             )
             .to(
                 Copy.CopyObject
                     .builder()
-                    .key(move)
+                    .key(Property.of(move))
                     .build()
             )
-            .delete(delete)
+            .delete(Property.of(delete))
             .build();
 
         Copy.Output copyOutput = task.run(runContext(task));

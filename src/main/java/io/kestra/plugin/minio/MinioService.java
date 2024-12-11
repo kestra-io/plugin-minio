@@ -33,7 +33,7 @@ public class MinioService {
                     .region(minioConnection.getRegion())
                     .accessKeyId(minioConnection.getAccessKeyId())
                     .secretKeyId(minioConnection.getSecretKeyId())
-                    .key(object.getKey())
+                    .key(Property.of(object.getKey()))
                     .bucket(Property.of(bucket))
                     .endpoint(minioConnection.getEndpoint())
                     .build();
@@ -52,19 +52,19 @@ public class MinioService {
                         Copy.CopyObjectFrom
                             .builder()
                             .bucket(Property.of(bucket))
-                            .key(object.getKey())
+                            .key(Property.of(object.getKey()))
                             .build()
                     )
                     .to(moveTo.toBuilder()
-                        .key(
+                        .key(Property.of(
                             "%s/%s".formatted(
                                 StringUtils.stripEnd(moveTo.getKey() + "/", "/"),
                                 FilenameUtils.getName(object.getKey())
                             )
-                        )
+                        ))
                         .build()
                     )
-                    .delete(true)
+                    .delete(Property.of(true))
                     .build();
                 copy.run(runContext);
             }

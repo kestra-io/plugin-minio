@@ -87,29 +87,29 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
     )
     @PluginProperty
     @Builder.Default
-    private Boolean delete = false;
+    private Property<Boolean> delete = Property.of(false);
 
     @Override
     public Output run(RunContext runContext) throws Exception {
         try (MinioClient minioClient = this.client(runContext)) {
             CopySource.Builder sourceBuilder = CopySource.builder()
                 .bucket(runContext.render(this.from.bucket).as(String.class).orElse(null))
-                .object(runContext.render(this.from.key));
+                .object(runContext.render(this.from.key).as(String.class).orElse(null));
 
             if (this.from.versionId != null) {
-                sourceBuilder.versionId(runContext.render(this.from.versionId));
+                sourceBuilder.versionId(runContext.render(this.from.versionId).as(String.class).orElseThrow());
             }
 
             CopyObjectArgs.Builder builder = CopyObjectArgs.builder()
                 .bucket(runContext.render(this.to.bucket != null ? this.to.bucket : this.from.bucket).as(String.class).orElseThrow())
-                .object(runContext.render(this.to.key))
+                .object(runContext.render(this.to.key).as(String.class).orElse(null))
                 .source(sourceBuilder.build());
 
             CopyObjectArgs request = builder.build();
 
             ObjectWriteResponse response = minioClient.copyObject(request);
 
-            if (this.delete) {
+            if (runContext.render(this.delete).as(Boolean.class).orElseThrow()) {
                 Delete.builder()
                     .id(this.id)
                     .type(Delete.class.getName())
@@ -144,8 +144,7 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
         @Schema(
             title = "The bucket key"
         )
-        @PluginProperty(dynamic = true)
-        String key;
+        Property<String> key;
     }
 
     @SuperBuilder(toBuilder = true)
@@ -155,8 +154,7 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
         @Schema(
             title = "The specific version of the object."
         )
-        @PluginProperty(dynamic = true)
-        private String versionId;
+        private Property<String> versionId;
     }
 
     @SuperBuilder

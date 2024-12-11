@@ -64,7 +64,7 @@ public class AllTest extends AbstractMinIoTest {
             .endpoint(Property.of(minIOContainer.getS3URL()))
             .accessKeyId(Property.of(minIOContainer.getUserName()))
             .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .key(key)
+            .key(Property.of(key))
             .build();
 
         Delete.Output deleteOutput = delete.run(runContext(delete));
