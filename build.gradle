@@ -51,7 +51,7 @@ dependencies {
     compileOnly'org.slf4j:slf4j-api'
 
     // Minio client dependency
-    implementation ('io.minio:minio:8.5.13') {
+    implementation ('io.minio:minio:8.5.15') {
         exclude (group: 'com.fasterxml.jackson.core', module: 'jackson-core')
         exclude (group: 'com.fasterxml.jackson.core', module: 'jackson-databind')
         exclude (group: 'com.fasterxml.jackson.core', module: 'jackson-annotations')
