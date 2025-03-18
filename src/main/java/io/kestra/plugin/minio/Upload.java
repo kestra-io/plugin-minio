@@ -99,7 +99,7 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
         description = "Can be a single file, a list of files or json array.",
         anyOf = {List.class, String.class}
     )
-    @PluginProperty(dynamic = true)
+    @PluginProperty(dynamic = true, internalStorageURI = true)
     private Object from;
 
     @Schema(
