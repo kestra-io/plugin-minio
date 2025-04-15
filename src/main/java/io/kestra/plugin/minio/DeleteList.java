@@ -68,7 +68,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
     }
 )
 @Schema(
-    title = "Delete a list of keys on a bucket."
+    title = "Delete a list of keys on a MinIO bucket."
 )
 public class DeleteList extends AbstractMinioObject implements RunnableTask<DeleteList.Output> {
 

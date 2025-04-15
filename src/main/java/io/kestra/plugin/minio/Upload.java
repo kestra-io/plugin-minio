@@ -84,7 +84,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
     }
 )
 @Schema(
-    title = "Upload a file to a bucket."
+    title = "Upload a file to a MinIO bucket."
 )
 public class Upload extends AbstractMinioObject implements RunnableTask<Upload.Output> {
 

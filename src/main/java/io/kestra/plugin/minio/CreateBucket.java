@@ -55,7 +55,7 @@ import lombok.experimental.SuperBuilder;
     }
 )
 @Schema(
-    title = "Create a bucket"
+    title = "Create a MinIO bucket."
 )
 public class CreateBucket extends AbstractMinioObject implements RunnableTask<CreateBucket.Output> {
 
