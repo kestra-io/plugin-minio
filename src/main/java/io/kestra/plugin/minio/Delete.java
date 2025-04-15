@@ -55,7 +55,7 @@ import lombok.experimental.SuperBuilder;
     }
 )
 @Schema(
-    title = "Delete a file from a bucket."
+    title = "Delete a file from a MinIO bucket."
 )
 public class Delete extends AbstractMinioObject implements RunnableTask<Delete.Output> {
 

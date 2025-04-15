@@ -67,7 +67,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
     }
 )
 @Schema(
-    title = "Downloads multiple files from a bucket."
+    title = "Downloads multiple files from a MinIO bucket."
 )
 public class Downloads extends AbstractMinioObject implements RunnableTask<Downloads.Output> {
 
