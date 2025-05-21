@@ -2,6 +2,7 @@ package io.kestra.plugin.minio;
 
 import com.google.common.io.CharStreams;
 import io.kestra.core.models.property.Property;
+import io.kestra.core.tenant.TenantService;
 import io.minio.errors.ErrorResponseException;
 import org.junit.jupiter.api.Test;
 
@@ -50,7 +51,7 @@ public class AllTest extends AbstractMinIoTest {
 
         Download.Output downloadOutput = download.run(runContext(download));
 
-        InputStream get = storageInterface.get(null, null, downloadOutput.getUri());
+        InputStream get = storageInterface.get(TenantService.MAIN_TENANT, null, downloadOutput.getUri());
         assertThat(
             CharStreams.toString(new InputStreamReader(get)),
             is(CharStreams.toString(new InputStreamReader(new FileInputStream(file()))))
