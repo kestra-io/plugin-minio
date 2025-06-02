@@ -93,7 +93,7 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
         description = "By default, the action returns up to 1,000 key names. The response might contain fewer keys but will never contain more."
     )
     @Builder.Default
-    private Property<Integer> maxKeys = Property.of(1000);
+    private Property<Integer> maxKeys = Property.ofValue(1000);
 
     @Schema(
         title = "A regexp to filter on full key.",
@@ -107,7 +107,7 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
         title = "The type of objects to filter: files, directory, or both."
     )
     @Builder.Default
-    protected final Property<List.Filter> filter = Property.of(List.Filter.BOTH);
+    protected final Property<List.Filter> filter = Property.ofValue(List.Filter.BOTH);
 
     @Min(2)
     @Schema(
@@ -120,7 +120,7 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
         title = "raise an error if the file is not found"
     )
     @Builder.Default
-    private final Property<Boolean> errorOnEmpty = Property.of(false);
+    private final Property<Boolean> errorOnEmpty = Property.ofValue(false);
 
     @Override
     public Output run(RunContext runContext) throws Exception {

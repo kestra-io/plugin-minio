@@ -45,7 +45,7 @@ public class TriggerTest extends AbstractMinIoTest {
     void deleteAction() throws Exception {
         String bucket = "trigger-test";
         this.createBucket(bucket);
-        List listTask = list().bucket(Property.of(bucket)).build();
+        List listTask = list().bucket(Property.ofValue(bucket)).build();
 
         // mock flow listeners
         CountDownLatch queueCount = new CountDownLatch(1);

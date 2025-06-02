@@ -152,12 +152,12 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     private Property<String> marker;
 
     @Builder.Default
-    private Property<Integer> maxKeys = Property.of(1000);
+    private Property<Integer> maxKeys = Property.ofValue(1000);
 
     protected Property<String> regexp;
 
     @Builder.Default
-    protected final Property<List.Filter> filter = Property.of(List.Filter.BOTH);
+    protected final Property<List.Filter> filter = Property.ofValue(List.Filter.BOTH);
 
     private Property<Downloads.Action> action;
 
@@ -223,7 +223,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
                 .accessKeyId(this.accessKeyId)
                 .secretKeyId(this.secretKeyId)
                 .bucket(this.bucket)
-                .key(Property.of(object.getKey()))
+                .key(Property.ofValue(object.getKey()))
                 .build();
             Download.Output downloadOutput = download.run(runContext);
 
