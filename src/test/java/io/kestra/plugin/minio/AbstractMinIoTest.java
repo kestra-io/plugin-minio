@@ -72,10 +72,10 @@ public class AbstractMinIoTest {
         CreateBucket createBucket = CreateBucket.builder()
             .id(AllTest.class.getSimpleName())
             .type(CreateBucket.class.getName())
-            .endpoint(Property.of(minIOContainer.getS3URL()))
-            .accessKeyId(Property.of(minIOContainer.getUserName()))
-            .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .bucket(Property.of(bucket))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .bucket(Property.ofValue(bucket))
             .build();
 
         CreateBucket.Output createOutput = createBucket.run(runContext(createBucket));
@@ -103,12 +103,12 @@ public class AbstractMinIoTest {
         Upload upload = Upload.builder()
             .id(AllTest.class.getSimpleName())
             .type(Upload.class.getName())
-            .endpoint(Property.of(minIOContainer.getS3URL()))
-            .accessKeyId(Property.of(minIOContainer.getUserName()))
-            .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .bucket(Property.of(bucket))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .bucket(Property.ofValue(bucket))
             .from(source.toString())
-            .key(Property.of(dir + "/" + out + ".yml"))
+            .key(Property.ofValue(dir + "/" + out + ".yml"))
             .build();
 
         Upload.Output output = upload.run(runContext(upload));
@@ -120,11 +120,11 @@ public class AbstractMinIoTest {
         return List.builder()
             .id(ListTest.class.getSimpleName())
             .type(List.class.getName())
-            .endpoint(Property.of(minIOContainer.getS3URL()))
-            .accessKeyId(Property.of(minIOContainer.getUserName()))
-            .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .bucket(Property.of(this.BUCKET))
-            .includeVersions(Property.of(true));
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .bucket(Property.ofValue(this.BUCKET))
+            .includeVersions(Property.ofValue(true));
     }
 
     protected RunContext runContext(Task task) {
