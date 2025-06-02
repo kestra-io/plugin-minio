@@ -20,10 +20,10 @@ public class DeleteListTest extends AbstractMinIoTest {
         DeleteList task = DeleteList.builder()
             .id(ListTest.class.getSimpleName())
             .type(List.class.getName())
-            .bucket(Property.of(this.BUCKET))
-            .endpoint(Property.of(minIOContainer.getS3URL()))
-            .accessKeyId(Property.of(minIOContainer.getUserName()))
-            .secretKeyId(Property.of(minIOContainer.getPassword()))
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
             .concurrent(5)
             .build();
 

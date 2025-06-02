@@ -24,12 +24,12 @@ public class UploadsTest extends AbstractMinIoTest {
             .builder()
             .id(AllTest.class.getSimpleName())
             .type(Upload.class.getName())
-            .bucket(Property.of(this.BUCKET))
-            .endpoint(Property.of(minIOContainer.getS3URL()))
-            .accessKeyId(Property.of(minIOContainer.getUserName()))
-            .secretKeyId(Property.of(minIOContainer.getPassword()))
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
             .from(java.util.List.of(source1.toString(), source2.toString(), source3.toString(), source4.toString()))
-            .key(Property.of(IdUtils.create() + "/"))
+            .key(Property.ofValue(IdUtils.create() + "/"))
             .build();
         var result = upload.run(runContext(upload));
 
@@ -37,11 +37,11 @@ public class UploadsTest extends AbstractMinIoTest {
             .builder()
             .id(AllTest.class.getSimpleName())
             .type(List.class.getName())
-            .bucket(Property.of(this.BUCKET))
-            .endpoint(Property.of(minIOContainer.getS3URL()))
-            .accessKeyId(Property.of(minIOContainer.getUserName()))
-            .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .prefix(Property.of(result.getKey()))
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .prefix(Property.ofValue(result.getKey()))
             .build();
 
         List.Output output = list.run(runContext(list));

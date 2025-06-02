@@ -28,11 +28,11 @@ public class AllTest extends AbstractMinIoTest {
             .builder()
             .id(AllTest.class.getSimpleName())
             .type(Upload.class.getName())
-            .bucket(Property.of(this.BUCKET))
-            .endpoint(Property.of(minIOContainer.getS3URL()))
-            .accessKeyId(Property.of(minIOContainer.getUserName()))
-            .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .prefix(Property.of("tasks/upload/"))
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .prefix(Property.ofValue("tasks/upload/"))
             .build();
 
         List.Output listOutput = list.run(runContext(list));
@@ -42,11 +42,11 @@ public class AllTest extends AbstractMinIoTest {
             .builder()
             .id(AllTest.class.getSimpleName())
             .type(Download.class.getName())
-            .bucket(Property.of(this.BUCKET))
-            .endpoint(Property.of(minIOContainer.getS3URL()))
-            .accessKeyId(Property.of(minIOContainer.getUserName()))
-            .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .key(Property.of(key))
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .key(Property.ofValue(key))
             .build();
 
         Download.Output downloadOutput = download.run(runContext(download));
@@ -61,11 +61,11 @@ public class AllTest extends AbstractMinIoTest {
             .builder()
             .id(AllTest.class.getSimpleName())
             .type(Delete.class.getName())
-            .bucket(Property.of(this.BUCKET))
-            .endpoint(Property.of(minIOContainer.getS3URL()))
-            .accessKeyId(Property.of(minIOContainer.getUserName()))
-            .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .key(Property.of(key))
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .key(Property.ofValue(key))
             .build();
 
         Delete.Output deleteOutput = delete.run(runContext(delete));
