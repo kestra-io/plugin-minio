@@ -86,7 +86,7 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
         title = "Whether to delete the source file after download."
     )
     @Builder.Default
-    private Property<Boolean> delete = Property.of(false);
+    private Property<Boolean> delete = Property.ofValue(false);
 
     @Override
     public Output run(RunContext runContext) throws Exception {

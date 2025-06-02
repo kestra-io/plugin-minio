@@ -98,7 +98,7 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
         description = "By default, the action returns up to 1,000 key names. The response might contain fewer keys but will never contain more."
     )
     @Builder.Default
-    private Property<Integer> maxKeys = Property.of(1000);
+    private Property<Integer> maxKeys = Property.ofValue(1000);
 
     @Schema(
         title = "A regexp to filter on full key.",
@@ -112,7 +112,7 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
         title = "The type of objects to filter: files, directory, or both."
     )
     @Builder.Default
-    protected final Property<io.kestra.plugin.minio.List.Filter> filter = Property.of(io.kestra.plugin.minio.List.Filter.BOTH);
+    protected final Property<io.kestra.plugin.minio.List.Filter> filter = Property.ofValue(io.kestra.plugin.minio.List.Filter.BOTH);
 
     @Schema(
         title = "The action to perform on the retrieved files. If using 'NONE' make sure to handle the files inside your flow to avoid infinite triggering."

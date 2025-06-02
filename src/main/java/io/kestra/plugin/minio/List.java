@@ -100,7 +100,7 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
         description = "By default, the action returns up to 1,000 key names. The response might contain fewer keys but will never contain more."
     )
     @Builder.Default
-    private Property<Integer> maxKeys = Property.of(1000);
+    private Property<Integer> maxKeys = Property.ofValue(1000);
 
     @Schema(
         title = "A regexp to filter on full key.",
@@ -114,19 +114,19 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
         title = "The type of objects to filter: files, directory, or both."
     )
     @Builder.Default
-    protected final Property<Filter> filter = Property.of(Filter.BOTH);
+    protected final Property<Filter> filter = Property.ofValue(Filter.BOTH);
 
     @Schema(
         title = "Indicates whether it should look into subfolders."
     )
     @Builder.Default
-    public Property<Boolean> recursive = Property.of(true);
+    public Property<Boolean> recursive = Property.ofValue(true);
 
     @Schema(
         title = "Indicates whether task should include versions in output."
     )
     @Builder.Default
-    public Property<Boolean> includeVersions = Property.of(true);
+    public Property<Boolean> includeVersions = Property.ofValue(true);
 
     @Override
     public Output run(RunContext runContext) throws Exception {

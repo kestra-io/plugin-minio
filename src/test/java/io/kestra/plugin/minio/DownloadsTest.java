@@ -21,11 +21,11 @@ public class DownloadsTest extends AbstractMinIoTest {
         Downloads task = Downloads.builder()
             .id(DownloadsTest.class.getSimpleName())
             .type(Downloads.class.getName())
-            .bucket(Property.of(this.BUCKET))
-            .endpoint(Property.of(minIOContainer.getS3URL()))
-            .accessKeyId(Property.of(minIOContainer.getUserName()))
-            .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .action(Property.of(Downloads.Action.DELETE))
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .action(Property.ofValue(Downloads.Action.DELETE))
             .build();
 
         Downloads.Output run = task.run(runContext(task));
@@ -49,13 +49,13 @@ public class DownloadsTest extends AbstractMinIoTest {
         Downloads task = Downloads.builder()
             .id(DownloadsTest.class.getSimpleName())
             .type(Downloads.class.getName())
-            .bucket(new Property<>("{{bucket}}"))
-            .endpoint(Property.of(minIOContainer.getS3URL()))
-            .accessKeyId(Property.of(minIOContainer.getUserName()))
-            .secretKeyId(Property.of(minIOContainer.getPassword()))
-            .action(Property.of(Downloads.Action.MOVE))
+            .bucket(Property.ofExpression("{{bucket}}"))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .action(Property.ofValue(Downloads.Action.MOVE))
             .moveTo(Copy.CopyObject.builder()
-                .key(Property.of("/tasks/move"))
+                .key(Property.ofValue("/tasks/move"))
                 .build()
             )
             .build();
@@ -65,12 +65,12 @@ public class DownloadsTest extends AbstractMinIoTest {
         assertThat(run.getObjects().size(), is(2));
         assertThat(run.getOutputFiles().size(), is(2));
 
-        List list = list().prefix(Property.of("tasks/from"))
+        List list = list().prefix(Property.ofValue("tasks/from"))
             .build();
         List.Output listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(0));
 
-        list = list().prefix(Property.of("tasks/move"))
+        list = list().prefix(Property.ofValue("tasks/move"))
             .build();
         listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(2));

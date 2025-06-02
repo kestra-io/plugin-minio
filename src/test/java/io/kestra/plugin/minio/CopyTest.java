@@ -18,34 +18,34 @@ public class CopyTest extends AbstractMinIoTest {
         Copy task = Copy.builder()
             .id(CopyTest.class.getSimpleName())
             .type(List.class.getName())
-            .endpoint(Property.of(minIOContainer.getS3URL()))
-            .accessKeyId(Property.of(minIOContainer.getUserName()))
-            .secretKeyId(Property.of(minIOContainer.getPassword()))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
             .from(
                 Copy.CopyObjectFrom
                     .builder()
-                    .bucket(Property.of(this.BUCKET))
-                    .key(Property.of(upload))
+                    .bucket(Property.ofValue(this.BUCKET))
+                    .key(Property.ofValue(upload))
                     .build()
             )
             .to(
                 Copy.CopyObject
                     .builder()
-                    .key(Property.of(move))
+                    .key(Property.ofValue(move))
                     .build()
             )
-            .delete(Property.of(delete))
+            .delete(Property.ofValue(delete))
             .build();
 
         Copy.Output copyOutput = task.run(runContext(task));
         assertThat(copyOutput.getKey(), is(move));
 
-        List list = list().prefix(Property.of(move)).build();
+        List list = list().prefix(Property.ofValue(move)).build();
 
         List.Output listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(1));
 
-        list = list().prefix(Property.of(upload)).build();
+        list = list().prefix(Property.ofValue(upload)).build();
 
         listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(delete ? 0 : 1));

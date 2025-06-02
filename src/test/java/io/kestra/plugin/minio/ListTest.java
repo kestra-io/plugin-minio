@@ -27,26 +27,26 @@ public class ListTest extends AbstractMinIoTest {
         assertThat(output.getObjects().size(), is(6));
 
         task = list()
-            .filter(Property.of(List.Filter.FILES))
-            .prefix(Property.of("tasks/"+dir+"/"))
+            .filter(Property.ofValue(List.Filter.FILES))
+            .prefix(Property.ofValue("tasks/"+dir+"/"))
             .build();
         output = task.run(runContext(task));
         assertThat(output.getObjects().size(), is(6));
 
         task = list()
-            .filter(Property.of(List.Filter.FILES))
+            .filter(Property.ofValue(List.Filter.FILES))
             .build();
         output = task.run(runContext(task));
         assertThat(output.getObjects().size(), is(6));
 
         task = list()
-            .prefix(Property.of("tasks/%s/sub".formatted(dir)))
+            .prefix(Property.ofValue("tasks/%s/sub".formatted(dir)))
             .build();
         output = task.run(runContext(task));
         assertThat(output.getObjects().size(), is(1));
 
         task = list()
-            .regexp(Property.of("tasks/.*/" + StringUtils.substringAfterLast(lastFileName, "/")))
+            .regexp(Property.ofValue("tasks/.*/" + StringUtils.substringAfterLast(lastFileName, "/")))
             .build();
         output = task.run(runContext(task));
         assertThat(output.getObjects().size(), is(1));
