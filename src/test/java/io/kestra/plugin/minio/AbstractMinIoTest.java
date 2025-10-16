@@ -116,6 +116,27 @@ public class AbstractMinIoTest {
         return output.getKey();
     }
 
+    protected String update(String key, String bucket) throws Exception {
+        Thread.sleep(1500);
+
+        java.net.URI source = storagePut(IdUtils.create());
+
+        Upload upload = Upload.builder()
+            .id(AllTest.class.getSimpleName())
+            .type(Upload.class.getName())
+            .bucket(Property.ofValue(bucket))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .from(Property.ofValue(source.toString()))
+            .key(Property.ofValue(key))
+            .build();
+
+        upload.run(runContext(upload));
+
+        return key;
+    }
+
     protected List.ListBuilder<?, ?> list() {
         return List.builder()
             .id(ListTest.class.getSimpleName())
