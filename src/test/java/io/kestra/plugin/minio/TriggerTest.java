@@ -157,7 +157,7 @@ public class TriggerTest extends AbstractMinIoTest {
         trigger.evaluate(context.getKey(), context.getValue());
 
         update(key, bucket);
-        Thread.sleep(1500);
+        Thread.sleep(2000);
 
         Optional<Execution> updateExecution = trigger.evaluate(context.getKey(), context.getValue());
         assertThat(updateExecution.isPresent(), is(true));
