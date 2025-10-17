@@ -1,5 +1,6 @@
 package io.kestra.plugin.minio;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.conditions.ConditionContext;
@@ -13,10 +14,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.sql.Blob;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static io.kestra.core.models.triggers.StatefulTriggerService.*;
 import static io.kestra.core.utils.Rethrow.throwFunction;
 
 @SuperBuilder
@@ -130,7 +136,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
         )
     }
 )
-public class Trigger extends AbstractTrigger implements PollingTriggerInterface, TriggerOutput<List.Output>, MinioConnectionInterface {
+public class Trigger extends AbstractTrigger implements PollingTriggerInterface, TriggerOutput<Trigger.Output>, MinioConnectionInterface, StatefulTriggerInterface {
 
     @Builder.Default
     private final Duration interval = Duration.ofSeconds(60);
@@ -163,9 +169,20 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
 
     private Copy.CopyObject moveTo;
 
+    @Builder.Default
+    private final Property<On> on = Property.ofValue(On.CREATE_OR_UPDATE);
+
+    private Property<String> stateKey;
+
+    private Property<Duration> stateTtl;
+
     @Override
     public Optional<Execution> evaluate(ConditionContext conditionContext, TriggerContext context) throws Exception {
         RunContext runContext = conditionContext.getRunContext();
+
+        var rOn = runContext.render(on).as(On.class).orElse(On.CREATE_OR_UPDATE);
+        var rStateKey = runContext.render(stateKey).as(String.class).orElse(StatefulTriggerService.defaultKey(context.getNamespace(), context.getFlowId(), id));
+        var rStateTtl = runContext.render(stateTtl).as(Duration.class);
 
         List task = List.builder()
             .id(this.id)
@@ -188,30 +205,63 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
             return Optional.empty();
         }
 
-        java.util.List<MinioObject> list = run
-            .getObjects()
-            .stream()
-            .map(throwFunction(getMinioObject(runContext)))
+        var previousState = readState(runContext, rStateKey, rStateTtl);
+
+        var actionBlobs = new ArrayList<MinioObject>();
+
+        var toFire = run.getObjects().stream()
+            .flatMap(throwFunction(object -> {
+                var uri = String.format("s3://%s/%s", runContext.render(bucket).as(String.class).orElse(""), object.getKey());
+                var modifiedAt = Optional.ofNullable(object.getLastModified()).orElseGet(Instant::now);
+                var version = Optional.ofNullable(object.getEtag()).orElse(String.valueOf(modifiedAt.toEpochMilli()));
+
+                var candidate = StatefulTriggerService.Entry.candidate(uri, version, modifiedAt);
+
+                var stateChange = computeAndUpdateState(previousState, candidate, rOn);
+
+                if (stateChange.fire()) {
+                    var changeType = stateChange.isNew() ? ChangeType.CREATE : ChangeType.UPDATE;
+
+                    var download = Download.builder()
+                        .id(this.id)
+                        .type(Download.class.getName())
+                        .region(this.region)
+                        .endpoint(this.endpoint)
+                        .accessKeyId(this.accessKeyId)
+                        .secretKeyId(this.secretKeyId)
+                        .bucket(this.bucket)
+                        .key(Property.ofValue(object.getKey()))
+                        .build();
+
+                    var downloadOutput = download.run(runContext);
+                    MinioObject downloadedBlob = object.withUri(downloadOutput.getUri());
+
+                    actionBlobs.add(object);
+
+                    return Stream.of(TriggeredBlob.builder()
+                        .object(downloadedBlob)
+                        .changeType(changeType)
+                        .build());
+                }
+
+                return Stream.empty();
+            }))
             .collect(Collectors.toList());
 
-        MinioService.performAction(
-            runContext,
-            run.getObjects(),
-            runContext.render(this.action).as(Downloads.Action.class).orElseThrow(),
-            runContext.render(this.bucket).as(String.class).orElse(null),
-            this,
-            this.moveTo
-        );
+        writeState(runContext, rStateKey, previousState, rStateTtl);
 
-        List.Output output = List.Output
-            .builder()
-            .objects(list)
-            .build();
+        if (toFire.isEmpty()) {
+            return Optional.empty();
+        }
 
+        MinioService.performAction(runContext, actionBlobs, runContext.render(this.action).as(Downloads.Action.class).orElse(Downloads.Action.NONE), runContext.render(this.bucket).as(String.class).orElse(null), this, this.moveTo);
+
+        var output = Output.builder().objects(toFire).build();
         Execution execution = TriggerService.generateExecution(this, conditionContext, context, output);
 
         return Optional.of(execution);
     }
+
 
     private Rethrow.FunctionChecked<MinioObject, MinioObject, Exception> getMinioObject(RunContext runContext) {
         return object -> {
@@ -231,4 +281,24 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
         };
     }
 
+    @Builder
+    @Getter
+    public static class Output implements io.kestra.core.models.tasks.Output {
+        @Schema(title = "List of blobs that triggered the flow, each with its change type.")
+        private final java.util.List<TriggeredBlob> objects;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @Builder
+    public static class TriggeredBlob {
+        @JsonUnwrapped
+        private final MinioObject object;
+        private final Trigger.ChangeType changeType;
+    }
+
+    public enum ChangeType {
+        CREATE,
+        UPDATE
+    }
 }

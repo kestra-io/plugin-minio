@@ -17,11 +17,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 import org.testcontainers.utility.DockerImageName;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Objects;
 
@@ -114,6 +113,35 @@ public class AbstractMinIoTest {
         Upload.Output output = upload.run(runContext(upload));
 
         return output.getKey();
+    }
+
+    protected String update(String key, String bucket) throws Exception {
+        String content = "updated file: " + IdUtils.create();
+        InputStream input = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
+
+        URI source = storageInterface.put(
+            TenantService.MAIN_TENANT,
+            null,
+            new URI("/" + IdUtils.create()),
+            input
+        );
+
+        var upload = Upload.builder()
+            .id(AllTest.class.getSimpleName())
+            .type(Upload.class.getName())
+            .bucket(Property.ofValue(bucket))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .from(source.toString())
+            .key(Property.ofValue(key))
+            .build();
+
+        System.out.println("Uploading new version from URI: " + source);
+
+        upload.run(runContext(upload));
+
+        return key;
     }
 
     protected List.ListBuilder<?, ?> list() {
