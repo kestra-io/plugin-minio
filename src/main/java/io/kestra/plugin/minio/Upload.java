@@ -1,6 +1,7 @@
 package io.kestra.plugin.minio;
 
 import io.kestra.core.models.annotations.Example;
+import io.kestra.core.models.annotations.Metric;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
@@ -81,6 +82,20 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                   key: "data/orders.csv"
               """
         )
+    },
+    metrics = {
+        @Metric(
+        name = "file.count",
+        type = Counter.TYPE,
+        unit = "count",
+        description = "Number of files successfully uploaded to the MinIO bucket."
+        ),
+        @Metric(
+        name = "file.size",
+        type = Counter.TYPE,
+        unit = "bytes",
+        description = "Size of the uploaded files in bytes."
+       )
     }
 )
 @Schema(
