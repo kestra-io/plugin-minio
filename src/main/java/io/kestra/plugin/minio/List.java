@@ -2,6 +2,7 @@ package io.kestra.plugin.minio;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.kestra.core.models.annotations.Example;
+import io.kestra.core.models.annotations.Metric;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
@@ -60,6 +61,14 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                   endpoint: https://<region>.digitaloceanspaces.com
                   bucket: "kestra-test-bucket"
               """
+        )
+    },
+    metrics = {
+        @Metric(
+            name = "size",
+            type = Counter.TYPE,
+            unit = "count",
+            description = "Number of objects returned from the MinIO bucket list."
         )
     }
 )
