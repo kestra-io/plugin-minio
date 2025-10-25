@@ -9,6 +9,7 @@ import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.serializers.JacksonMapper;
+import io.kestra.core.models.property.Data;
 import io.kestra.plugin.minio.model.ObjectOutput;
 import io.minio.MinioAsyncClient;
 import io.minio.ObjectWriteResponse;
@@ -27,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -85,33 +87,32 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
     },
     metrics = {
         @Metric(
-        name = "file.count",
-        type = Counter.TYPE,
-        unit = "count",
-        description = "Number of files successfully uploaded to the MinIO bucket."
+            name = "file.count",
+            type = Counter.TYPE,
+            unit = "count",
+            description = "Number of files successfully uploaded to the MinIO bucket."
         ),
         @Metric(
-        name = "file.size",
-        type = Counter.TYPE,
-        unit = "bytes",
-        description = "Size of the uploaded files in bytes."
-       )
+            name = "file.size",
+            type = Counter.TYPE,
+            unit = "bytes",
+            description = "Size of the uploaded files in bytes."
+        )
     }
 )
 @Schema(
     title = "Upload a file to a MinIO bucket."
 )
-public class Upload extends AbstractMinioObject implements RunnableTask<Upload.Output> {
-
+public class Upload extends AbstractMinioObject implements RunnableTask<Upload.Output>, Data.From {
     @Schema(
         title = "The key where to upload the file.",
-        description = "a full key (with filename) or the directory path if from is multiple files."
+        description = "A full key (with filename) or the directory path if 'from' is multiple files."
     )
     private Property<String> key;
 
     @Schema(
-        title = "The file(s) to upload.",
-        description = "Can be a single file, a list of files or json array.",
+        title = Data.From.TITLE,
+        description = Data.From.DESCRIPTION,
         anyOf = {List.class, String.class}
     )
     @PluginProperty(dynamic = true, internalStorageURI = true)
@@ -134,11 +135,14 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
 
         String[] renderedFroms;
         if (this.from instanceof Collection<?> fromURIs) {
-            renderedFroms = fromURIs.stream().map(throwFunction(from -> runContext.render((String) from))).toArray(String[]::new);
+            renderedFroms = fromURIs.stream()
+                .map(throwFunction(from -> runContext.render((String) from)))
+                .toArray(String[]::new);
         } else if (this.from instanceof String) {
             renderedFroms = new String[]{runContext.render((String) this.from)};
         } else {
-            renderedFroms = JacksonMapper.ofJson().readValue(runContext.render((String) this.from), String[].class);
+            renderedFroms = JacksonMapper.ofJson()
+                .readValue(runContext.render((String) this.from), String[].class);
         }
 
         try (MinioAsyncClient client = this.asyncClient(runContext)) {
@@ -156,11 +160,13 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
             }
 
             for (String renderedFrom : renderedFroms) {
-                File tempFile = runContext.workingDir().createTempFile(FilenameUtils.getExtension(renderedFrom)).toFile();
-                URI from = new URI(runContext.render(renderedFrom));
-                Files.copy(runContext.storage().getFile(from), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                File tempFile = runContext.workingDir()
+                    .createTempFile(FilenameUtils.getExtension(renderedFrom))
+                    .toFile();
+                URI fromUri = new URI(runContext.render(renderedFrom));
+                Files.copy(runContext.storage().getFile(fromUri), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-                // if multiple files, it's a dir
+                // If multiple files, treat key as directory
                 if (renderedFroms.length > 1) {
                     builder.object(Path.of(key, FilenameUtils.getName(renderedFrom)).toString());
                 }
@@ -168,19 +174,16 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
                 builder.filename(tempFile.getPath());
 
                 UploadObjectArgs objectToUpload = builder.build();
-
                 runContext.logger().debug("Uploading to '{}'", objectToUpload.object());
 
                 CompletableFuture<ObjectWriteResponse> upload = client.uploadObject(objectToUpload);
-
                 ObjectWriteResponse response = upload.get();
 
                 runContext.metric(Counter.of("file.count", 1));
                 runContext.metric(Counter.of("file.size", tempFile.length()));
 
                 if (renderedFroms.length == 1) {
-                    return Output
-                        .builder()
+                    return Output.builder()
                         .bucket(bucket)
                         .key(key)
                         .eTag(response.etag())
@@ -189,8 +192,7 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
                 }
             }
 
-            return Output
-                .builder()
+            return Output.builder()
                 .bucket(bucket)
                 .key(key)
                 .build();
@@ -203,5 +205,4 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
         private final String bucket;
         private final String key;
     }
-
 }
