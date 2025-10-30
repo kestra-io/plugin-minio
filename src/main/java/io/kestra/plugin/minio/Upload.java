@@ -8,7 +8,6 @@ import io.kestra.core.models.executions.metrics.Counter;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
-import io.kestra.core.serializers.JacksonMapper;
 import io.kestra.core.models.property.Data;
 import io.kestra.plugin.minio.model.ObjectOutput;
 import io.minio.MinioAsyncClient;
@@ -22,18 +21,18 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.io.FilenameUtils;
 
-import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import static io.kestra.core.utils.Rethrow.throwFunction;
-
+/**
+ * Upload task for MinIO and S3-compatible storages.
+ * Supports dynamic rendering and multi-file uploads via Kestra’s Data API.
+ */
 @SuperBuilder
 @ToString
 @EqualsAndHashCode
@@ -48,8 +47,8 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                 namespace: company.team
 
                 inputs:
-                  id: file
-                  type: FILE
+                  - id: file
+                    type: FILE
 
                 tasks:
                   - id: upload_to_storage
@@ -63,26 +62,26 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                 """
         ),
         @Example(
-            title = "Upload file to an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
+            title = "Upload file to S3-compatible storage (e.g., DigitalOcean Spaces).",
             full = true,
             code = """
-              id: s3_compatible_upload
-              namespace: company.team
+                id: s3_compatible_upload
+                namespace: company.team
 
-              tasks:
-                - id: http_download
-                  type: io.kestra.plugin.core.http.Download
-                  uri: https://huggingface.co/datasets/kestra/datasets/raw/main/csv/orders.csv\
+                tasks:
+                  - id: http_download
+                    type: io.kestra.plugin.core.http.Download
+                    uri: https://huggingface.co/datasets/kestra/datasets/raw/main/csv/orders.csv
 
-                - id: upload_to_storage
-                  type: io.kestra.plugin.minio.Upload
-                  accessKeyId: "<access-key>"
-                  secretKeyId: "<secret-key>"
-                  endpoint: https://<region>.digitaloceanspaces.com  #example regions: nyc3, tor1
-                  bucket: "kestra-test-bucket"
-                  from: "{{ outputs.http_download.uri }}"
-                  key: "data/orders.csv"
-              """
+                  - id: upload_to_storage
+                    type: io.kestra.plugin.minio.Upload
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    endpoint: https://<region>.digitaloceanspaces.com
+                    bucket: "kestra-test-bucket"
+                    from: "{{ outputs.http_download.uri }}"
+                    key: "data/orders.csv"
+                """
         )
     },
     metrics = {
@@ -101,97 +100,94 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
     }
 )
 @Schema(
-    title = "Upload a file to a MinIO bucket."
+    title = "Upload a file to a MinIO bucket or S3-compatible object storage."
 )
 public class Upload extends AbstractMinioObject implements RunnableTask<Upload.Output>, Data.From {
+
     @Schema(
-        title = "The key where to upload the file.",
-        description = "A full key (with filename) or the directory path if 'from' is multiple files."
+        title = "The object key (path/filename) where the file should be uploaded.",
+        description = "Provide full key with filename, or directory path if multiple files are being uploaded."
     )
     private Property<String> key;
 
     @Schema(
         title = Data.From.TITLE,
-        description = Data.From.DESCRIPTION,
-        anyOf = {List.class, String.class}
+        description = Data.From.DESCRIPTION
     )
     @PluginProperty(dynamic = true, internalStorageURI = true)
     private Object from;
 
     @Schema(
-        title = "A standard MIME type describing the format of the contents."
+        title = "A standard MIME type describing the format of the file contents."
     )
     private Property<String> contentType;
 
     @Schema(
-        title = "A map of metadata to store with the object."
+        title = "A map of metadata to associate with the uploaded object."
     )
     private Property<Map<String, String>> metadata;
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
-        String key = runContext.render(this.key).as(String.class).orElse(null);
+        String bucket = runContext.render(this.bucket).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("Bucket name is required"));
+        String key = runContext.render(this.key).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("Object key is required"));
 
-        String[] renderedFroms;
-        if (this.from instanceof Collection<?> fromURIs) {
-            renderedFroms = fromURIs.stream()
-                .map(throwFunction(from -> runContext.render((String) from)))
-                .toArray(String[]::new);
-        } else if (this.from instanceof String) {
-            renderedFroms = new String[]{runContext.render((String) this.from)};
-        } else {
-            renderedFroms = JacksonMapper.ofJson()
-                .readValue(runContext.render((String) this.from), String[].class);
-        }
+        // Use Kestra’s Data API for resolving 'from' URIs
+        List<String> renderedFroms = Data.from(this.from)
+            .read(runContext)
+            .map(Object::toString)
+            .collectList()
+            .block();
 
         try (MinioAsyncClient client = this.asyncClient(runContext)) {
-            UploadObjectArgs.Builder builder = UploadObjectArgs.builder()
-                .bucket(bucket)
-                .object(key);
-
             var metadataValue = runContext.render(this.metadata).asMap(String.class, String.class);
-            if (!metadataValue.isEmpty()) {
-                builder.userMetadata(metadataValue);
-            }
-
-            if (this.contentType != null) {
-                builder.contentType(runContext.render(this.contentType).as(String.class).orElseThrow());
-            }
 
             for (String renderedFrom : renderedFroms) {
-                File tempFile = runContext.workingDir()
-                    .createTempFile(FilenameUtils.getExtension(renderedFrom))
-                    .toFile();
-                URI fromUri = new URI(runContext.render(renderedFrom));
-                Files.copy(runContext.storage().getFile(fromUri), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                URI fromUri = new URI(renderedFrom);
+                Path tempFile = runContext.workingDir()
+                    .createTempFile(FilenameUtils.getExtension(renderedFrom));
 
-                // If multiple files, treat key as directory
-                if (renderedFroms.length > 1) {
-                    builder.object(Path.of(key, FilenameUtils.getName(renderedFrom)).toString());
+                Files.copy(runContext.storage().getFile(fromUri), tempFile, StandardCopyOption.REPLACE_EXISTING);
+
+                String objectKey = (renderedFroms.size() > 1)
+                    ? Path.of(key, FilenameUtils.getName(renderedFrom)).toString()
+                    : key;
+
+                UploadObjectArgs.Builder builder = UploadObjectArgs.builder()
+                    .bucket(bucket)
+                    .object(objectKey)
+                    .filename(tempFile.toString());
+
+                if (!metadataValue.isEmpty()) {
+                    builder.userMetadata(metadataValue);
                 }
 
-                builder.filename(tempFile.getPath());
+                if (this.contentType != null) {
+                    builder.contentType(runContext.render(this.contentType).as(String.class).orElse(null));
+                }
 
-                UploadObjectArgs objectToUpload = builder.build();
-                runContext.logger().debug("Uploading to '{}'", objectToUpload.object());
+                runContext.logger().info("Uploading file '{}' to bucket '{}' as '{}'", renderedFrom, bucket, objectKey);
 
-                CompletableFuture<ObjectWriteResponse> upload = client.uploadObject(objectToUpload);
+                CompletableFuture<ObjectWriteResponse> upload = client.uploadObject(builder.build());
                 ObjectWriteResponse response = upload.get();
 
                 runContext.metric(Counter.of("file.count", 1));
-                runContext.metric(Counter.of("file.size", tempFile.length()));
+                runContext.metric(Counter.of("file.size", Files.size(tempFile)));
 
-                if (renderedFroms.length == 1) {
+                // Return on single file upload
+                if (renderedFroms.size() == 1) {
                     return Output.builder()
                         .bucket(bucket)
-                        .key(key)
+                        .key(objectKey)
                         .eTag(response.etag())
                         .versionId(response.versionId())
                         .build();
                 }
             }
 
+            // Multi-file case
             return Output.builder()
                 .bucket(bucket)
                 .key(key)
@@ -199,6 +195,7 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
         }
     }
 
+    // Output object for Kestra
     @SuperBuilder
     @Getter
     public static class Output extends ObjectOutput implements io.kestra.core.models.tasks.Output {
