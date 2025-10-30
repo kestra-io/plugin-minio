@@ -107,7 +107,6 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     )
     private Property<String> key;
 
-    @PluginProperty(dynamic = true, internalStorageURI = true)
     private Object from;
 
     @Schema(
