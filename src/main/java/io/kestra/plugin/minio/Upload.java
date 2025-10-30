@@ -29,10 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Upload task for MinIO and S3-compatible storages.
- * Supports dynamic rendering and multi-file uploads via Kestra’s Data API.
- */
+
 @SuperBuilder
 @ToString
 @EqualsAndHashCode
@@ -100,30 +97,26 @@ import java.util.concurrent.CompletableFuture;
     }
 )
 @Schema(
-    title = "Upload a file to a MinIO bucket or S3-compatible object storage."
+    title = "Upload a file to a MinIO bucket."
 )
 public class Upload extends AbstractMinioObject implements RunnableTask<Upload.Output>, Data.From {
 
     @Schema(
-        title = "The object key (path/filename) where the file should be uploaded.",
-        description = "Provide full key with filename, or directory path if multiple files are being uploaded."
+        title = "The key where to upload the file.",
+        description = "a full key (with filename) or the directory path if from is multiple files."
     )
     private Property<String> key;
 
-    @Schema(
-        title = Data.From.TITLE,
-        description = Data.From.DESCRIPTION
-    )
     @PluginProperty(dynamic = true, internalStorageURI = true)
     private Object from;
 
     @Schema(
-        title = "A standard MIME type describing the format of the file contents."
+        title = "A standard MIME type describing the format of the contents."
     )
     private Property<String> contentType;
 
     @Schema(
-        title = "A map of metadata to associate with the uploaded object."
+        title = "A map of metadata to store with the object."
     )
     private Property<Map<String, String>> metadata;
 
@@ -134,7 +127,6 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
         String key = runContext.render(this.key).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("Object key is required"));
 
-        // Use Kestra’s Data API for resolving 'from' URIs
         List<String> renderedFroms = Data.from(this.from)
             .read(runContext)
             .map(Object::toString)
@@ -176,7 +168,6 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
                 runContext.metric(Counter.of("file.count", 1));
                 runContext.metric(Counter.of("file.size", Files.size(tempFile)));
 
-                // Return on single file upload
                 if (renderedFroms.size() == 1) {
                     return Output.builder()
                         .bucket(bucket)
@@ -187,7 +178,6 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
                 }
             }
 
-            // Multi-file case
             return Output.builder()
                 .bucket(bucket)
                 .key(key)
@@ -195,7 +185,6 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
         }
     }
 
-    // Output object for Kestra
     @SuperBuilder
     @Getter
     public static class Output extends ObjectOutput implements io.kestra.core.models.tasks.Output {
