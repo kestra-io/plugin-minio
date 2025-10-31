@@ -8,13 +8,13 @@ TRUSTPASS="changeit"
 mkdir -p "${MTLS_DIR}"
 rm -f "${MTLS_DIR}"/* || true
 
-echo "📜 Generating CA certificate..."
+echo "Generating CA certificate..."
 openssl req -x509 -newkey rsa:4096 -days 1825 -nodes \
   -keyout "${MTLS_DIR}/ca-key.pem" \
   -out "${MTLS_DIR}/ca-cert.pem" \
   -subj "/CN=KestraTestCA"
 
-echo "🔐 Generating server certificate..."
+echo "Generating server certificate..."
 openssl genrsa -out "${MTLS_DIR}/server-key.pem" 4096
 
 cat > "${MTLS_DIR}/server-ext.cnf" <<EOF
@@ -32,7 +32,7 @@ openssl x509 -req -in "${MTLS_DIR}/server.csr" \
 
 cat "${MTLS_DIR}/server-cert.pem" "${MTLS_DIR}/ca-cert.pem" > "${MTLS_DIR}/server-chain.pem"
 
-echo "👤 Generating client certificate..."
+echo "Generating client certificate..."
 openssl genrsa -out "${MTLS_DIR}/client-key.pem" 4096
 openssl req -new -key "${MTLS_DIR}/client-key.pem" \
   -out "${MTLS_DIR}/client.csr" -subj "/CN=KestraTestClient"
@@ -60,5 +60,5 @@ rm -f "${MTLS_DIR}/server.csr" "${MTLS_DIR}/client.csr" "${MTLS_DIR}/ca-cert.srl
 cp "${MTLS_DIR}/server-cert.pem" "${MTLS_DIR}/public.crt"
 cp "${MTLS_DIR}/server-key.pem" "${MTLS_DIR}/private.key"
 
-echo "✅ Generated test certs in ${MTLS_DIR}"
+echo "Generated test certs in ${MTLS_DIR}"
 ls -1 "${MTLS_DIR}"
