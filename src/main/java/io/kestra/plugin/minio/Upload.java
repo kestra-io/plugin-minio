@@ -126,11 +126,20 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
         String key = runContext.render(this.key).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("Object key is required"));
 
-        List<String> renderedFroms = Data.from(this.from)
-            .read(runContext)
-            .map(Object::toString)
-            .collectList()
-            .block();
+        List<String> renderedFroms;
+
+try {
+    renderedFroms = Data.from(this.from)
+        .read(runContext)
+        .map(Object::toString)
+        .collectList()
+        .block();
+} catch (Exception e) {
+    // Fallback: treat `from` as a plain string value
+    String rendered = runContext.render(this.from.toString());
+    renderedFroms = List.of(rendered);
+}
+
 
         try (MinioAsyncClient client = this.asyncClient(runContext)) {
             var metadataValue = runContext.render(this.metadata).asMap(String.class, String.class);
