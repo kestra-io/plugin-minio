@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-
 @SuperBuilder
 @ToString
 @EqualsAndHashCode
@@ -127,19 +126,18 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
 
         List<String> renderedFroms;
 
-            try {
-                renderedFroms = Data.from(this.from)
-                    .read(runContext)
-                    .map(Object::toString)
-                    .collectList()
-                    .block();
-            } catch (Exception e) {
-                String rendered = runContext.render(this.from.toString());
-                renderedFroms = List.of(rendered);
-            }
+        try {
+            renderedFroms = Data.from(this.from)
+                .read(runContext)
+                .map(Object::toString)
+                .collectList()
+                .block();
+        } catch (Exception e) {
+            String rendered = runContext.render(this.from.toString());
+            renderedFroms = List.of(rendered);
+        }
 
-
-            try (MinioAsyncClient client = this.asyncClient(runContext)) {
+        try (MinioAsyncClient client = this.asyncClient(runContext)) {
             var metadataValue = runContext.render(this.metadata).asMap(String.class, String.class);
 
             List<Output> uploadedFiles = new java.util.ArrayList<>();
@@ -162,7 +160,7 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
 
                     Files.copy(runContext.storage().getFile(fromUri), tempFile, StandardCopyOption.REPLACE_EXISTING);
 
-                    String objectKey = (renderedFroms.size() > 1)
+                    String objectKey = (splitFroms.length > 1 || renderedFroms.size() > 1)
                         ? Path.of(key, FilenameUtils.getName(singleFrom)).toString()
                         : key;
 
@@ -199,6 +197,7 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
             return Output.builder()
                 .bucket(bucket)
                 .key(key)
+                .uploadedFiles(uploadedFiles)
                 .build();
         }
     }
@@ -208,5 +207,6 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     public static class Output extends ObjectOutput implements io.kestra.core.models.tasks.Output {
         private final String bucket;
         private final String key;
+        private final List<Output> uploadedFiles; 
     }
 }
