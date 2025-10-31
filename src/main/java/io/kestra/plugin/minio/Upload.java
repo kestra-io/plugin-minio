@@ -3,7 +3,6 @@ package io.kestra.plugin.minio;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Metric;
 import io.kestra.core.models.annotations.Plugin;
-import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
@@ -128,61 +127,72 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
 
         List<String> renderedFroms;
 
-try {
-    renderedFroms = Data.from(this.from)
-        .read(runContext)
-        .map(Object::toString)
-        .collectList()
-        .block();
-} catch (Exception e) {
-    // Fallback: treat `from` as a plain string value
-    String rendered = runContext.render(this.from.toString());
-    renderedFroms = List.of(rendered);
-}
+            try {
+                renderedFroms = Data.from(this.from)
+                    .read(runContext)
+                    .map(Object::toString)
+                    .collectList()
+                    .block();
+            } catch (Exception e) {
+                String rendered = runContext.render(this.from.toString());
+                renderedFroms = List.of(rendered);
+            }
 
 
-        try (MinioAsyncClient client = this.asyncClient(runContext)) {
+            try (MinioAsyncClient client = this.asyncClient(runContext)) {
             var metadataValue = runContext.render(this.metadata).asMap(String.class, String.class);
 
+            List<Output> uploadedFiles = new java.util.ArrayList<>();
+
             for (String renderedFrom : renderedFroms) {
-                URI fromUri = new URI(renderedFrom);
-                Path tempFile = runContext.workingDir()
-                    .createTempFile(FilenameUtils.getExtension(renderedFrom));
-
-                Files.copy(runContext.storage().getFile(fromUri), tempFile, StandardCopyOption.REPLACE_EXISTING);
-
-                String objectKey = (renderedFroms.size() > 1)
-                    ? Path.of(key, FilenameUtils.getName(renderedFrom)).toString()
-                    : key;
-
-                UploadObjectArgs.Builder builder = UploadObjectArgs.builder()
-                    .bucket(bucket)
-                    .object(objectKey)
-                    .filename(tempFile.toString());
-
-                if (!metadataValue.isEmpty()) {
-                    builder.userMetadata(metadataValue);
+                renderedFrom = renderedFrom.trim();
+                if (renderedFrom.startsWith("[") && renderedFrom.endsWith("]")) {
+                    renderedFrom = renderedFrom.substring(1, renderedFrom.length() - 1);
                 }
 
-                if (this.contentType != null) {
-                    builder.contentType(runContext.render(this.contentType).as(String.class).orElse(null));
-                }
+                String[] splitFroms = renderedFrom.split(",");
+                for (String singleFrom : splitFroms) {
+                    singleFrom = singleFrom.trim();
+                    if (singleFrom.isEmpty()) continue;
 
-                runContext.logger().info("Uploading file '{}' to bucket '{}' as '{}'", renderedFrom, bucket, objectKey);
+                    URI fromUri = new URI(singleFrom);
 
-                CompletableFuture<ObjectWriteResponse> upload = client.uploadObject(builder.build());
-                ObjectWriteResponse response = upload.get();
+                    Path tempFile = runContext.workingDir()
+                        .createTempFile(FilenameUtils.getExtension(singleFrom));
 
-                runContext.metric(Counter.of("file.count", 1));
-                runContext.metric(Counter.of("file.size", Files.size(tempFile)));
+                    Files.copy(runContext.storage().getFile(fromUri), tempFile, StandardCopyOption.REPLACE_EXISTING);
 
-                if (renderedFroms.size() == 1) {
-                    return Output.builder()
+                    String objectKey = (renderedFroms.size() > 1)
+                        ? Path.of(key, FilenameUtils.getName(singleFrom)).toString()
+                        : key;
+
+                    UploadObjectArgs.Builder builder = UploadObjectArgs.builder()
+                        .bucket(bucket)
+                        .object(objectKey)
+                        .filename(tempFile.toString());
+
+                    if (!metadataValue.isEmpty()) {
+                        builder.userMetadata(metadataValue);
+                    }
+
+                    if (this.contentType != null) {
+                        builder.contentType(runContext.render(this.contentType).as(String.class).orElse(null));
+                    }
+
+                    runContext.logger().info("Uploading file '{}' to bucket '{}' as '{}'", singleFrom, bucket, objectKey);
+
+                    CompletableFuture<ObjectWriteResponse> upload = client.uploadObject(builder.build());
+                    ObjectWriteResponse response = upload.get();
+
+                    runContext.metric(Counter.of("file.count", 1));
+                    runContext.metric(Counter.of("file.size", Files.size(tempFile)));
+
+                    uploadedFiles.add(Output.builder()
                         .bucket(bucket)
                         .key(objectKey)
                         .eTag(response.etag())
                         .versionId(response.versionId())
-                        .build();
+                        .build());
                 }
             }
 
