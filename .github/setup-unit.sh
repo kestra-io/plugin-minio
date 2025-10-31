@@ -62,3 +62,8 @@ cp "${MTLS_DIR}/server-key.pem" "${MTLS_DIR}/private.key"
 
 echo "Generated test certs in ${MTLS_DIR}"
 ls -1 "${MTLS_DIR}"
+
+if [ -d src/test/resources/mtls ]; then
+  sudo chown -R "$(id -u):$(id -g)" src/test/resources/mtls || true
+  chmod -R a+rX src/test/resources/mtls || true
+fi
