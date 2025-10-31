@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -75,7 +76,10 @@ public class CopyTest extends AbstractMinIoTest {
             .withPassword("testpassword")
             .withEnv("MINIO_CERT_FILE", "/root/.minio/certs/server-cert.pem")
             .withEnv("MINIO_KEY_FILE", "/root/.minio/certs/server-key.pem")
-            .withFileSystemBind("src/test/resources/mtls", "/root/.minio/certs")
+            .withCopyToContainer(
+                MountableFile.forHostPath("src/test/resources/mtls"),
+                "/root/.minio/certs"
+            )
             .withCommand("server /data")
             .waitingFor(Wait.forListeningPort())
             .withExposedPorts(9000);
