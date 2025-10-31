@@ -1,6 +1,7 @@
 package io.kestra.plugin.minio;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import io.kestra.core.http.client.configurations.SslOptions;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.conditions.ConditionContext;
@@ -176,6 +177,20 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
 
     private Property<Duration> stateTtl;
 
+    @Schema(
+        title = "Client PEM certificate content",
+        description = "PEM client certificate as text, used to authenticate the connection to enterprise AI endpoints."
+    )
+    private Property<String> clientPem;
+
+    @Schema(
+        title = "CA PEM certificate content",
+        description = "CA certificate as text, used to verify SSL/TLS connections when using custom endpoints."
+    )
+    private Property<String> caPem;
+
+    protected SslOptions ssl;
+
     @Override
     public Optional<Execution> evaluate(ConditionContext conditionContext, TriggerContext context) throws Exception {
         RunContext runContext = conditionContext.getRunContext();
@@ -198,6 +213,9 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
             .maxKeys(this.maxKeys)
             .regexp(this.regexp)
             .filter(this.filter)
+            .caPem(this.caPem)
+            .clientPem(this.clientPem)
+            .ssl(this.ssl)
             .build();
         List.Output run = task.run(runContext);
 
