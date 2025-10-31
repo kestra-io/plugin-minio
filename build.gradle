@@ -54,6 +54,9 @@ dependencies {
         exclude (group: 'com.fasterxml.jackson.core', module: 'jackson-databind')
         exclude (group: 'com.fasterxml.jackson.core', module: 'jackson-annotations')
     }
+
+    // PEM
+    implementation('org.bouncycastle:bcpkix-jdk18on')
 }
 
 
