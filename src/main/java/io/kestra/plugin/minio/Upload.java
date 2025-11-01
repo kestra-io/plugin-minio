@@ -3,12 +3,11 @@ package io.kestra.plugin.minio;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Metric;
 import io.kestra.core.models.annotations.Plugin;
-import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
-import io.kestra.core.serializers.JacksonMapper;
+import io.kestra.core.models.property.Data;
 import io.kestra.plugin.minio.model.ObjectOutput;
 import io.minio.MinioAsyncClient;
 import io.minio.ObjectWriteResponse;
@@ -21,16 +20,13 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.io.FilenameUtils;
 
-import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
-import static io.kestra.core.utils.Rethrow.throwFunction;
 
 @SuperBuilder
 @ToString
@@ -46,8 +42,8 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                 namespace: company.team
 
                 inputs:
-                  id: file
-                  type: FILE
+                  - id: file
+                    type: FILE
 
                 tasks:
                   - id: upload_to_storage
@@ -61,47 +57,47 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                 """
         ),
         @Example(
-            title = "Upload file to an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
+            title = "Upload file to S3-compatible storage (e.g., DigitalOcean Spaces).",
             full = true,
             code = """
-              id: s3_compatible_upload
-              namespace: company.team
+                id: s3_compatible_upload
+                namespace: company.team
 
-              tasks:
-                - id: http_download
-                  type: io.kestra.plugin.core.http.Download
-                  uri: https://huggingface.co/datasets/kestra/datasets/raw/main/csv/orders.csv\
+                tasks:
+                  - id: http_download
+                    type: io.kestra.plugin.core.http.Download
+                    uri: https://huggingface.co/datasets/kestra/datasets/raw/main/csv/orders.csv
 
-                - id: upload_to_storage
-                  type: io.kestra.plugin.minio.Upload
-                  accessKeyId: "<access-key>"
-                  secretKeyId: "<secret-key>"
-                  endpoint: https://<region>.digitaloceanspaces.com  #example regions: nyc3, tor1
-                  bucket: "kestra-test-bucket"
-                  from: "{{ outputs.http_download.uri }}"
-                  key: "data/orders.csv"
-              """
+                  - id: upload_to_storage
+                    type: io.kestra.plugin.minio.Upload
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    endpoint: https://<region>.digitaloceanspaces.com
+                    bucket: "kestra-test-bucket"
+                    from: "{{ outputs.http_download.uri }}"
+                    key: "data/orders.csv"
+                """
         )
     },
     metrics = {
         @Metric(
-        name = "file.count",
-        type = Counter.TYPE,
-        unit = "count",
-        description = "Number of files successfully uploaded to the MinIO bucket."
+            name = "file.count",
+            type = Counter.TYPE,
+            unit = "count",
+            description = "Number of files successfully uploaded to the MinIO bucket."
         ),
         @Metric(
-        name = "file.size",
-        type = Counter.TYPE,
-        unit = "bytes",
-        description = "Size of the uploaded files in bytes."
-       )
+            name = "file.size",
+            type = Counter.TYPE,
+            unit = "bytes",
+            description = "Size of the uploaded files in bytes."
+        )
     }
 )
 @Schema(
     title = "Upload a file to a MinIO bucket."
 )
-public class Upload extends AbstractMinioObject implements RunnableTask<Upload.Output> {
+public class Upload extends AbstractMinioObject implements RunnableTask<Upload.Output>, Data.From {
 
     @Schema(
         title = "The key where to upload the file.",
@@ -109,12 +105,6 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     )
     private Property<String> key;
 
-    @Schema(
-        title = "The file(s) to upload.",
-        description = "Can be a single file, a list of files or json array.",
-        anyOf = {List.class, String.class}
-    )
-    @PluginProperty(dynamic = true, internalStorageURI = true)
     private Object from;
 
     @Schema(
@@ -129,70 +119,85 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
-        String key = runContext.render(this.key).as(String.class).orElse(null);
+        String bucket = runContext.render(this.bucket).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("Bucket name is required"));
+        String key = runContext.render(this.key).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("Object key is required"));
 
-        String[] renderedFroms;
-        if (this.from instanceof Collection<?> fromURIs) {
-            renderedFroms = fromURIs.stream().map(throwFunction(from -> runContext.render((String) from))).toArray(String[]::new);
-        } else if (this.from instanceof String) {
-            renderedFroms = new String[]{runContext.render((String) this.from)};
-        } else {
-            renderedFroms = JacksonMapper.ofJson().readValue(runContext.render((String) this.from), String[].class);
+        List<String> renderedFroms;
+
+        try {
+            renderedFroms = Data.from(this.from)
+                .read(runContext)
+                .map(Object::toString)
+                .collectList()
+                .block();
+        } catch (Exception e) {
+            String rendered = runContext.render(this.from.toString());
+            renderedFroms = List.of(rendered);
         }
 
         try (MinioAsyncClient client = this.asyncClient(runContext)) {
-            UploadObjectArgs.Builder builder = UploadObjectArgs.builder()
-                .bucket(bucket)
-                .object(key);
-
             var metadataValue = runContext.render(this.metadata).asMap(String.class, String.class);
-            if (!metadataValue.isEmpty()) {
-                builder.userMetadata(metadataValue);
-            }
 
-            if (this.contentType != null) {
-                builder.contentType(runContext.render(this.contentType).as(String.class).orElseThrow());
-            }
+            List<Output> uploadedFiles = new java.util.ArrayList<>();
 
             for (String renderedFrom : renderedFroms) {
-                File tempFile = runContext.workingDir().createTempFile(FilenameUtils.getExtension(renderedFrom)).toFile();
-                URI from = new URI(runContext.render(renderedFrom));
-                Files.copy(runContext.storage().getFile(from), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-                // if multiple files, it's a dir
-                if (renderedFroms.length > 1) {
-                    builder.object(Path.of(key, FilenameUtils.getName(renderedFrom)).toString());
+                renderedFrom = renderedFrom.trim();
+                if (renderedFrom.startsWith("[") && renderedFrom.endsWith("]")) {
+                    renderedFrom = renderedFrom.substring(1, renderedFrom.length() - 1);
                 }
 
-                builder.filename(tempFile.getPath());
+                String[] splitFroms = renderedFrom.split(",");
+                for (String singleFrom : splitFroms) {
+                    singleFrom = singleFrom.trim();
+                    if (singleFrom.isEmpty()) continue;
 
-                UploadObjectArgs objectToUpload = builder.build();
+                    URI fromUri = new URI(singleFrom);
 
-                runContext.logger().debug("Uploading to '{}'", objectToUpload.object());
+                    Path tempFile = runContext.workingDir()
+                        .createTempFile(FilenameUtils.getExtension(singleFrom));
 
-                CompletableFuture<ObjectWriteResponse> upload = client.uploadObject(objectToUpload);
+                    Files.copy(runContext.storage().getFile(fromUri), tempFile, StandardCopyOption.REPLACE_EXISTING);
 
-                ObjectWriteResponse response = upload.get();
+                    String objectKey = (splitFroms.length > 1 || renderedFroms.size() > 1)
+                        ? Path.of(key, FilenameUtils.getName(singleFrom)).toString()
+                        : key;
 
-                runContext.metric(Counter.of("file.count", 1));
-                runContext.metric(Counter.of("file.size", tempFile.length()));
-
-                if (renderedFroms.length == 1) {
-                    return Output
-                        .builder()
+                    UploadObjectArgs.Builder builder = UploadObjectArgs.builder()
                         .bucket(bucket)
-                        .key(key)
+                        .object(objectKey)
+                        .filename(tempFile.toString());
+
+                    if (!metadataValue.isEmpty()) {
+                        builder.userMetadata(metadataValue);
+                    }
+
+                    if (this.contentType != null) {
+                        builder.contentType(runContext.render(this.contentType).as(String.class).orElse(null));
+                    }
+
+                    runContext.logger().info("Uploading file '{}' to bucket '{}' as '{}'", singleFrom, bucket, objectKey);
+
+                    CompletableFuture<ObjectWriteResponse> upload = client.uploadObject(builder.build());
+                    ObjectWriteResponse response = upload.get();
+
+                    runContext.metric(Counter.of("file.count", 1));
+                    runContext.metric(Counter.of("file.size", Files.size(tempFile)));
+
+                    uploadedFiles.add(Output.builder()
+                        .bucket(bucket)
+                        .key(objectKey)
                         .eTag(response.etag())
                         .versionId(response.versionId())
-                        .build();
+                        .build());
                 }
             }
 
-            return Output
-                .builder()
+            return Output.builder()
                 .bucket(bucket)
                 .key(key)
+                .uploadedFiles(uploadedFiles)
                 .build();
         }
     }
@@ -202,6 +207,6 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     public static class Output extends ObjectOutput implements io.kestra.core.models.tasks.Output {
         private final String bucket;
         private final String key;
+        private final List<Output> uploadedFiles; 
     }
-
 }
