@@ -116,7 +116,6 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
         anyOf = {List.class, String.class, Map.class}
     )
     @NotNull
-    @PluginProperty(dynamic = true, internalStorageURI = true)
     private Object from;
 
     @Schema(
