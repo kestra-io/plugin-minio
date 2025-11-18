@@ -3,11 +3,12 @@ package io.kestra.plugin.minio;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Metric;
 import io.kestra.core.models.annotations.Plugin;
+import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
+import io.kestra.core.models.property.Data;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
-import io.kestra.core.models.property.Data;
 import io.kestra.plugin.minio.model.ObjectOutput;
 import io.minio.MinioAsyncClient;
 import io.minio.ObjectWriteResponse;
@@ -19,14 +20,18 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.io.FilenameUtils;
+import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Flux;
 
+import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.Objects;
+import java.util.function.Function;
 
 @SuperBuilder
 @ToString
@@ -105,6 +110,13 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     )
     private Property<String> key;
 
+    @Schema(
+        title = "The file(s) to upload.",
+        description = "Can be a single file, a list of files or json array.",
+        anyOf = {List.class, String.class, Map.class}
+    )
+    @NotNull
+    @PluginProperty(dynamic = true, internalStorageURI = true)
     private Object from;
 
     @Schema(
@@ -119,86 +131,139 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String bucket = runContext.render(this.bucket).as(String.class)
-            .orElseThrow(() -> new IllegalArgumentException("Bucket name is required"));
-        String key = runContext.render(this.key).as(String.class)
-            .orElseThrow(() -> new IllegalArgumentException("Object key is required"));
+        String bucket = runContext.render(this.bucket).as(String.class).orElseThrow();
+        String baseKey = runContext.render(this.key).as(String.class).orElseThrow();
 
-        List<String> renderedFroms;
-
-        try {
-            renderedFroms = Data.from(this.from)
-                .read(runContext)
-                .map(Object::toString)
-                .collectList()
-                .block();
-        } catch (Exception e) {
-            String rendered = runContext.render(this.from.toString());
-            renderedFroms = List.of(rendered);
+        Map<String, String> filesToUpload = parseFromProperty(runContext);
+        if (filesToUpload.isEmpty()) {
+            throw new IllegalArgumentException("No files to upload: the 'from' property contains an empty collection or array");
         }
 
         try (MinioAsyncClient client = this.asyncClient(runContext)) {
-            var metadataValue = runContext.render(this.metadata).asMap(String.class, String.class);
 
-            List<Output> uploadedFiles = new java.util.ArrayList<>();
-
-            for (String renderedFrom : renderedFroms) {
-                renderedFrom = renderedFrom.trim();
-                if (renderedFrom.startsWith("[") && renderedFrom.endsWith("]")) {
-                    renderedFrom = renderedFrom.substring(1, renderedFrom.length() - 1);
-                }
-
-                String[] splitFroms = renderedFrom.split(",");
-                for (String singleFrom : splitFroms) {
-                    singleFrom = singleFrom.trim();
-                    if (singleFrom.isEmpty()) continue;
-
-                    URI fromUri = new URI(singleFrom);
-
-                    Path tempFile = runContext.workingDir()
-                        .createTempFile(FilenameUtils.getExtension(singleFrom));
-
-                    Files.copy(runContext.storage().getFile(fromUri), tempFile, StandardCopyOption.REPLACE_EXISTING);
-
-                    String objectKey = (splitFroms.length > 1 || renderedFroms.size() > 1)
-                        ? Path.of(key, FilenameUtils.getName(singleFrom)).toString()
-                        : key;
-
-                    UploadObjectArgs.Builder builder = UploadObjectArgs.builder()
-                        .bucket(bucket)
-                        .object(objectKey)
-                        .filename(tempFile.toString());
-
-                    if (!metadataValue.isEmpty()) {
-                        builder.userMetadata(metadataValue);
-                    }
-
-                    if (this.contentType != null) {
-                        builder.contentType(runContext.render(this.contentType).as(String.class).orElse(null));
-                    }
-
-                    runContext.logger().info("Uploading file '{}' to bucket '{}' as '{}'", singleFrom, bucket, objectKey);
-
-                    CompletableFuture<ObjectWriteResponse> upload = client.uploadObject(builder.build());
-                    ObjectWriteResponse response = upload.get();
-
-                    runContext.metric(Counter.of("file.count", 1));
-                    runContext.metric(Counter.of("file.size", Files.size(tempFile)));
-
-                    uploadedFiles.add(Output.builder()
-                        .bucket(bucket)
-                        .key(objectKey)
-                        .eTag(response.etag())
-                        .versionId(response.versionId())
-                        .build());
-                }
+            if (filesToUpload.size() == 1) {
+                return uploadSingle(runContext, client, bucket, baseKey, filesToUpload.values().iterator().next());
+            } else {
+                return uploadMultiple(runContext, client, bucket, baseKey, filesToUpload);
             }
+        }
+    }
 
-            return Output.builder()
+    private Map<String, String> parseFromProperty(RunContext runContext) throws Exception {
+        Data data = Data.from(this.from);
+
+        try {
+            Function<Map<String, Object>, Map<String, String>> mapper = map -> {
+                Map<String, String> result = new HashMap<>();
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                    result.put(entry.getKey(), entry.getValue().toString());
+                }
+                return result;
+            };
+
+            @SuppressWarnings("unchecked")
+            Flux<Map<String, String>> rFromMap = data.readAs(runContext, (Class<Map<String, String>>) Map.of().getClass(), mapper);
+            return Objects.requireNonNull(rFromMap.blockFirst());
+        } catch (Exception e) {
+            runContext.logger().debug("'from' property is not a Map, trying List...", e);
+        }
+
+        try {
+            @SuppressWarnings("unchecked")
+            Flux<java.util.List<String>> asList = data.readAs(
+                runContext, (Class<java.util.List<String>>) java.util.List.of().getClass(),
+                raw -> raw.keySet().stream().toList()
+            );
+            java.util.List<String> uris = asList.flatMapIterable(i -> i).collectList().block();
+            Map<String, String> r = new HashMap<>();
+            for (String uri : Objects.requireNonNull(uris)) {
+                r.put(FilenameUtils.getName(uri), uri);
+            }
+            return r;
+        } catch (Exception e) {
+            runContext.logger().debug("'from' property is not a List, trying String...", e);
+        }
+
+        Flux<String> rFromString = data.readAs(runContext, String.class, Object::toString);
+        return uriListToMap(Objects.requireNonNull(rFromString.collectList().block()));
+    }
+
+    private Map<String, String> uriListToMap(java.util.List<String> rUriList) {
+        Map<String, String> rUriMap = new HashMap<>();
+        for (String rUri : rUriList) {
+            rUriMap.put(FilenameUtils.getName(rUri), rUri);
+        }
+        return rUriMap;
+    }
+
+    private Output uploadSingle(RunContext runContext, MinioAsyncClient client,
+                                String bucket, String key, String uri) throws Exception {
+        File tmp = copyTemp(runContext, uri);
+
+        UploadObjectArgs.Builder builder = UploadObjectArgs.builder()
+            .bucket(bucket)
+            .object(key)
+            .filename(tmp.getAbsolutePath());
+
+        applyOptions(runContext, builder);
+
+        ObjectWriteResponse res = client.uploadObject(builder.build()).get();
+
+        runContext.metric(Counter.of("file.count", 1));
+        runContext.metric(Counter.of("file.size", tmp.length()));
+
+        return Output.builder()
+            .bucket(bucket)
+            .key(key)
+            .eTag(res.etag())
+            .versionId(res.versionId())
+            .build();
+    }
+
+    private Output uploadMultiple(RunContext runContext, MinioAsyncClient client,
+                                  String bucket, String baseKey, Map<String, String> files) throws Exception {
+
+        for (Map.Entry<String, String> entry : files.entrySet()) {
+            String relativeName = entry.getKey();
+            String uri = entry.getValue();
+            String finalKey = Path.of(baseKey, relativeName).toString();
+
+            File tmp = copyTemp(runContext, uri);
+
+            UploadObjectArgs.Builder builder = UploadObjectArgs.builder()
                 .bucket(bucket)
-                .key(key)
-                .uploadedFiles(uploadedFiles)
-                .build();
+                .object(finalKey)
+                .filename(tmp.getAbsolutePath());
+
+            applyOptions(runContext, builder);
+
+            ObjectWriteResponse res = client.uploadObject(builder.build()).get();
+
+            runContext.metric(Counter.of("file.count", 1));
+            runContext.metric(Counter.of("file.size", tmp.length()));
+        }
+
+        return Output.builder()
+            .bucket(bucket)
+            .key(baseKey)
+            .build();
+    }
+
+    private File copyTemp(RunContext runContext, String uri) throws Exception {
+        File temp = runContext.workingDir().createTempFile(FilenameUtils.getExtension(uri)).toFile();
+        URI from = new URI(runContext.render(uri));
+        Files.copy(runContext.storage().getFile(from), temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        return temp;
+    }
+
+    private void applyOptions(RunContext runContext, UploadObjectArgs.Builder builder) throws Exception {
+        var metadataValue = runContext.render(this.metadata).asMap(String.class, String.class);
+        if (!metadataValue.isEmpty()) {
+            builder.userMetadata(metadataValue);
+        }
+
+        if (this.contentType != null) {
+            builder.contentType(runContext.render(this.contentType).as(String.class).orElseThrow());
         }
     }
 
@@ -207,6 +272,5 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     public static class Output extends ObjectOutput implements io.kestra.core.models.tasks.Output {
         private final String bucket;
         private final String key;
-        private final List<Output> uploadedFiles; 
     }
 }
