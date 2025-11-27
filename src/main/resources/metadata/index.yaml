@@ -1,0 +1,8 @@
+group: io.kestra.plugin.minio
+name: "minio"
+title: "MinIO"
+description: "Plugin MinIO for Kestra"
+body: ""
+videos: []
+createdBy: "Kestra Core Team"
+managedBy: "Kestra Core Team"
