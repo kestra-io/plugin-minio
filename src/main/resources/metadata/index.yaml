@@ -1,8 +1,8 @@
 group: io.kestra.plugin.minio
 name: "minio"
 title: "MinIO"
-description: "Plugin MinIO for Kestra"
-body: ""
+description: "Tasks that interact with MinIO S3-compatible object storage."
+body: "Configure endpoint, access/secret keys, bucket, and region or path-style settings to upload/download objects, list prefixes, and integrate MinIO data with workflows."
 videos: []
 createdBy: "Kestra Core Team"
 managedBy: "Kestra Core Team"
