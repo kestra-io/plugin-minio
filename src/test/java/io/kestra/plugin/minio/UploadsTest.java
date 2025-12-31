@@ -65,7 +65,7 @@ public class UploadsTest extends AbstractMinIoTest {
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
             .from(java.util.List.of(source.toString()))
-            .key(Property.ofValue(IdUtils.create() + "/"))
+            .key(Property.ofValue(IdUtils.create() + "/file.json"))
             .build();
 
         Upload.Output uploadOutput = upload.run(runContext(upload));
