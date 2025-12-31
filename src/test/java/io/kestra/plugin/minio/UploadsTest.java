@@ -7,7 +7,8 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
 
 public class UploadsTest extends AbstractMinIoTest {
 
@@ -49,4 +50,41 @@ public class UploadsTest extends AbstractMinIoTest {
         assertThat(output.getObjects().stream().filter(object -> object.getKey().contains("1.yml")).count(), is(1L));
     }
 
+    @Test
+    void shouldParseKestraURI() throws Exception {
+        this.createBucket();
+
+        URI source = storagePut("file.json");
+
+        Upload upload = Upload.builder()
+            .id(IdUtils.create())
+            .type(Upload.class.getName())
+            .type(Upload.class.getName())
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .from(java.util.List.of(source.toString()))
+            .key(Property.ofValue(IdUtils.create() + "/"))
+            .build();
+
+        Upload.Output uploadOutput = upload.run(runContext(upload));
+
+        assertThat(uploadOutput.getBucket(), is(this.BUCKET));
+
+        List list = List.builder()
+            .id(IdUtils.create())
+            .type(List.class.getName())
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .prefix(Property.ofValue(uploadOutput.getKey()))
+            .build();
+
+        List.Output listOutput = list.run(runContext(list));
+
+        assertThat(listOutput.getObjects().size(), is(1));
+        assertThat(listOutput.getObjects().getFirst().getKey(), containsString("file.json"));
+    }
 }
