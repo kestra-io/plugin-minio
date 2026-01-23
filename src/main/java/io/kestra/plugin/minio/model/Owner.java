@@ -12,6 +12,9 @@ public class Owner {
     private String displayName;
 
     public static Owner of(io.minio.messages.Owner owner) {
+        if (owner == null) {
+            return null;
+        }
         return Owner
             .builder()
             .id(owner.id())

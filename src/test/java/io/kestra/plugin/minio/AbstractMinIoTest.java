@@ -12,7 +12,6 @@ import io.kestra.core.utils.TestsUtils;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 import org.testcontainers.utility.DockerImageName;
@@ -21,23 +20,24 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Objects;
 
 @KestraTest
 @Testcontainers
 public class AbstractMinIoTest {
-    public static String MINIO_IMAGE = "minio/minio:RELEASE.2023-09-04T19-57-37Z";
+    public static String VERSITY_IMAGE = "versity/versitygw:latest";
 
-    protected static MinIOContainer minIOContainer;
+    protected static VersityContainer minIOContainer;
 
     @BeforeAll
     static void startMinIo() {
-        minIOContainer = new MinIOContainer(DockerImageName.parse(MINIO_IMAGE))
+
+        DockerImageName versityImage = DockerImageName.parse(VERSITY_IMAGE);
+
+        minIOContainer = new VersityContainer(versityImage)
             .withUserName("testuser")
             .withPassword("testpassword");
 
-        minIOContainer.setPortBindings(Collections.singletonList("9000:9000"));
         minIOContainer.start();
     }
 

@@ -9,6 +9,7 @@ import io.kestra.core.runners.RunContext;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
+import io.minio.errors.InvalidResponseException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -72,11 +73,15 @@ public class CreateBucket extends AbstractMinioObject implements RunnableTask<Cr
 
             BucketExistsArgs bucketExistsArgs = BucketExistsArgs.builder().bucket(bucket).build();
 
-            if (client.bucketExists(bucketExistsArgs)) {
-                return Output
-                    .builder()
-                    .bucket(bucket)
-                    .build();
+            try {
+                if (client.bucketExists(bucketExistsArgs)) {
+                    return Output
+                        .builder()
+                        .bucket(bucket)
+                        .build();
+                }
+            } catch (InvalidResponseException ignored) {
+                // Some S3-compatible gateways return non-XML errors for missing buckets.
             }
             MakeBucketArgs.Builder requestBuilder = MakeBucketArgs.builder().bucket(bucket);
 
