@@ -4,7 +4,6 @@ import io.kestra.core.models.property.Property;
 import io.kestra.core.utils.IdUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
@@ -71,16 +70,22 @@ public class CopyTest extends AbstractMinIoTest {
 
     @Test
     void testWithTlsContainer_andClientPem_shouldUseMtls() throws Exception {
-        var tlsContainer = new MinIOContainer(DockerImageName.parse(MINIO_IMAGE))
+        var tlsContainer = new VersityContainer(DockerImageName.parse(VERSITY_IMAGE))
             .withUserName("testuser")
             .withPassword("testpassword")
-            .withEnv("MINIO_CERT_FILE", "/root/.minio/certs/server-cert.pem")
-            .withEnv("MINIO_KEY_FILE", "/root/.minio/certs/server-key.pem")
             .withCopyToContainer(
                 MountableFile.forHostPath("src/test/resources/mtls"),
                 "/root/.minio/certs"
             )
-            .withCommand("server /data")
+            .withCommand(
+                "--access", "testuser",
+                "--secret", "testpassword",
+                "--port", ":9000",
+                "--cert", "/root/.minio/certs/server-cert.pem",
+                "--key", "/root/.minio/certs/server-key.pem",
+                "posix", "/data",
+                "--quiet"
+            )
             .waitingFor(Wait.forListeningPort())
             .withExposedPorts(9000);
 

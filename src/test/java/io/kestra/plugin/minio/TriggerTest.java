@@ -21,12 +21,15 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
 import java.time.Duration;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -80,7 +83,16 @@ public class TriggerTest extends AbstractMinIoTest {
 
             worker.run();
             scheduler.run();
-            repositoryLoader.load(Objects.requireNonNull(TriggerTest.class.getClassLoader().getResource("flows/listen.yaml")));
+            Path flowPath = Files.createTempFile("kestra-minio-listen-", ".yaml");
+            String flow;
+            try (var flowStream = Objects.requireNonNull(TriggerTest.class.getClassLoader()
+                .getResourceAsStream("flows/listen.yaml"))) {
+                flow = new String(flowStream.readAllBytes(), StandardCharsets.UTF_8);
+            }
+            flow = flow.replace("http://localhost:9000", minIOContainer.getS3URL());
+            Files.writeString(flowPath, flow, StandardCharsets.UTF_8);
+
+            repositoryLoader.load(flowPath.toUri().toURL());
 
             boolean await = queueCount.await(10, TimeUnit.SECONDS);
             try {
