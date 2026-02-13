@@ -7,6 +7,7 @@ import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
 import io.kestra.core.models.property.Data;
 import io.kestra.core.models.property.Property;
+import io.kestra.core.models.property.URIFetcher;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.minio.model.ObjectOutput;
@@ -150,6 +151,10 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
 
     private Map<String, String> parseFromProperty(RunContext runContext) throws Exception {
         Data data = Data.from(this.from);
+
+        if (this.from instanceof String fromString && URIFetcher.supports(runContext.render(fromString))) {
+            return uriListToMap(java.util.List.of(fromString));
+        }
 
         try {
             Function<Map<String, Object>, Map<String, String>> mapper = map -> {
