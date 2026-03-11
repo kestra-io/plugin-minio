@@ -1,16 +1,19 @@
 package io.kestra.plugin.minio;
 
-import com.google.common.io.CharStreams;
-import io.kestra.core.models.property.Property;
-import io.kestra.core.tenant.TenantService;
-import io.minio.errors.ErrorResponseException;
-import org.junit.jupiter.api.Test;
-
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+
+import org.junit.jupiter.api.Test;
+
+import com.google.common.io.CharStreams;
+
+import io.kestra.core.models.property.Property;
+import io.kestra.core.tenant.TenantService;
+
+import io.minio.errors.ErrorResponseException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;

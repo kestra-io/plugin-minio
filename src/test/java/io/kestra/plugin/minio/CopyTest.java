@@ -1,15 +1,16 @@
 package io.kestra.plugin.minio;
 
-import io.kestra.core.models.property.Property;
-import io.kestra.core.utils.IdUtils;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import io.kestra.core.models.property.Property;
+import io.kestra.core.utils.IdUtils;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -132,13 +133,17 @@ public class CopyTest extends AbstractMinIoTest {
                 .secretKeyId(Property.ofValue(tlsContainer.getPassword()))
                 .caPem(Property.ofValue(caPem))
                 .clientPem(Property.ofValue(clientPem))
-                .from(Copy.CopyObjectFrom.builder()
-                    .bucket(Property.ofValue("tls-bucket"))
-                    .key(Property.ofValue("tls.txt"))
-                    .build())
-                .to(Copy.CopyObject.builder()
-                    .key(Property.ofValue("copy.txt"))
-                    .build())
+                .from(
+                    Copy.CopyObjectFrom.builder()
+                        .bucket(Property.ofValue("tls-bucket"))
+                        .key(Property.ofValue("tls.txt"))
+                        .build()
+                )
+                .to(
+                    Copy.CopyObject.builder()
+                        .key(Property.ofValue("copy.txt"))
+                        .build()
+                )
                 .build();
 
             Copy.Output copy = copyTask.run(runContext(copyTask));

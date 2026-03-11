@@ -1,10 +1,10 @@
 package io.kestra.plugin.minio;
 
+import java.util.Map;
+
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
-
-import java.util.Map;
 
 public class VersityContainer extends GenericContainer<VersityContainer> {
     private static final int S3_PORT = 9000;

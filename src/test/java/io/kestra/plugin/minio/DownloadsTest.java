@@ -1,9 +1,10 @@
 package io.kestra.plugin.minio;
 
-import io.kestra.core.models.property.Property;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
+import io.kestra.core.models.property.Property;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
@@ -54,9 +55,10 @@ public class DownloadsTest extends AbstractMinIoTest {
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
             .action(Property.ofValue(Downloads.Action.MOVE))
-            .moveTo(Copy.CopyObject.builder()
-                .key(Property.ofValue("/tasks/move"))
-                .build()
+            .moveTo(
+                Copy.CopyObject.builder()
+                    .key(Property.ofValue("/tasks/move"))
+                    .build()
             )
             .build();
 

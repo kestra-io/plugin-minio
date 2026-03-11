@@ -1,10 +1,11 @@
 package io.kestra.plugin.minio;
 
-import io.kestra.core.models.property.Property;
-import io.kestra.core.utils.IdUtils;
+import java.net.URI;
+
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
+import io.kestra.core.models.property.Property;
+import io.kestra.core.utils.IdUtils;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;

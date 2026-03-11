@@ -2,10 +2,10 @@ package io.kestra.plugin.minio;
 
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
-import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
+
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
@@ -41,17 +41,17 @@ import lombok.experimental.SuperBuilder;
             title = "Create a new bucket on an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
             full = true,
             code = """
-              id: s3_compatible_bucket
-              namespace: company.team
+                id: s3_compatible_bucket
+                namespace: company.team
 
-              tasks:
-                - id: create_bucket
-                  type: io.kestra.plugin.minio.CreateBucket
-                  accessKeyId: "<access_key>"
-                  secretKeyId: "<secret_key>"
-                  endpoint: https://<region>.digitaloceanspaces.com  #example region: nyc3, tor1
-                  bucket: "kestra-test-bucket"
-              """
+                tasks:
+                  - id: create_bucket
+                    type: io.kestra.plugin.minio.CreateBucket
+                    accessKeyId: "<access_key>"
+                    secretKeyId: "<secret_key>"
+                    endpoint: https://<region>.digitaloceanspaces.com  #example region: nyc3, tor1
+                    bucket: "kestra-test-bucket"
+                """
         )
     }
 )

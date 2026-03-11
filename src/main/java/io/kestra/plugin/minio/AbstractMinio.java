@@ -1,16 +1,19 @@
 package io.kestra.plugin.minio;
 
-import io.kestra.core.runners.RunContext;
-import io.minio.MinioAsyncClient;
-import io.minio.MinioClient;
-import okhttp3.OkHttpClient;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.hc.core5.ssl.SSLContexts;
-
-import javax.net.ssl.*;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
+
+import javax.net.ssl.*;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.core5.ssl.SSLContexts;
+
+import io.kestra.core.runners.RunContext;
+
+import io.minio.MinioAsyncClient;
+import io.minio.MinioClient;
+import okhttp3.OkHttpClient;
 
 public interface AbstractMinio extends MinioConnectionInterface {
 
@@ -19,8 +22,10 @@ public interface AbstractMinio extends MinioConnectionInterface {
 
         MinioClient.Builder clientBuilder = MinioClient.builder();
 
-        if (StringUtils.isNotEmpty(minioClientConfig.accessKeyId()) &&
-            StringUtils.isNotEmpty(minioClientConfig.secretKeyId())) {
+        if (
+            StringUtils.isNotEmpty(minioClientConfig.accessKeyId()) &&
+                StringUtils.isNotEmpty(minioClientConfig.secretKeyId())
+        ) {
             clientBuilder.credentials(minioClientConfig.accessKeyId(), minioClientConfig.secretKeyId());
         }
 
@@ -45,8 +50,10 @@ public interface AbstractMinio extends MinioConnectionInterface {
 
         MinioAsyncClient.Builder clientBuilder = MinioAsyncClient.builder();
 
-        if (StringUtils.isNotEmpty(minioClientConfig.accessKeyId()) &&
-            StringUtils.isNotEmpty(minioClientConfig.secretKeyId())) {
+        if (
+            StringUtils.isNotEmpty(minioClientConfig.accessKeyId()) &&
+                StringUtils.isNotEmpty(minioClientConfig.secretKeyId())
+        ) {
             clientBuilder.credentials(minioClientConfig.accessKeyId(), minioClientConfig.secretKeyId());
         }
 

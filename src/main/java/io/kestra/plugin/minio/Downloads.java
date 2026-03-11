@@ -1,6 +1,13 @@
 package io.kestra.plugin.minio;
 
+import java.net.URI;
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Metric;
 import io.kestra.core.models.annotations.Plugin;
@@ -10,17 +17,12 @@ import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.minio.model.MinioObject;
+
 import io.minio.MinioAsyncClient;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-
-import java.net.URI;
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static io.kestra.core.utils.Rethrow.throwFunction;
 
@@ -52,28 +54,28 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             title = "Download files from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
             full = true,
             code = """
-              id: s3_compatible_downloads
-              namespace: company.team
+                id: s3_compatible_downloads
+                namespace: company.team
 
-              tasks:
-                - id: downloads
-                  type: io.kestra.plugin.minio.Downloads
-                  accessKeyId: "<access-key>"
-                  secretKeyId: "<secret-key>"
-                  endpoint: https://<region>.digitaloceanspaces.com
-                  bucket: "kestra-test-bucket"
-                  prefix: "data/orders"
-                  action: "DELETE"
-              """
+                tasks:
+                  - id: downloads
+                    type: io.kestra.plugin.minio.Downloads
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    endpoint: https://<region>.digitaloceanspaces.com
+                    bucket: "kestra-test-bucket"
+                    prefix: "data/orders"
+                    action: "DELETE"
+                """
         )
     },
     metrics = {
         @Metric(
-        name = "file.size",
-        type = Counter.TYPE,
-        unit = "bytes",
-        description = "The size in bytes of the downloaded file from the MinIO bucket."
-      )
+            name = "file.size",
+            type = Counter.TYPE,
+            unit = "bytes",
+            description = "The size in bytes of the downloaded file from the MinIO bucket."
+        )
     }
 )
 @Schema(
@@ -112,8 +114,8 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
 
     @Schema(
         title = "A regexp to filter on full key.",
-        description = "ex:\n"+
-            "`regExp: .*` to match all files\n"+
+        description = "ex:\n" +
+            "`regExp: .*` to match all files\n" +
             "`regExp: .*2020-01-0.\\\\.csv` to match files between 01 and 09 of january ending with `.csv`"
     )
     protected Property<String> regexp;
@@ -163,19 +165,20 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
             List<MinioObject> list = run
                 .getObjects()
                 .stream()
-                .map(throwFunction(object -> {
-                            URI fileUri = MinioService.download(
-                                    runContext,
-                                    client,
-                                    bucket,
-                                    object.getKey(),
-                                    null
-                                )
-                                .getLeft();
-
-                            return object.withUri(fileUri);
-                        }
+                .map(throwFunction(object ->
+                {
+                    URI fileUri = MinioService.download(
+                        runContext,
+                        client,
+                        bucket,
+                        object.getKey(),
+                        null
                     )
+                        .getLeft();
+
+                    return object.withUri(fileUri);
+                }
+                )
                 )
                 .filter(object -> !object.getKey().endsWith("/"))
                 .collect(Collectors.toList());

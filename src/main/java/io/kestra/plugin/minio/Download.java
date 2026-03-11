@@ -1,15 +1,17 @@
 package io.kestra.plugin.minio;
 
+import java.net.URI;
+
+import org.apache.commons.lang3.tuple.Pair;
+
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Metric;
 import io.kestra.core.models.annotations.Plugin;
-import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
-import io.kestra.core.utils.FileUtils;
-import io.minio.DownloadObjectArgs;
+
 import io.minio.MinioAsyncClient;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
@@ -17,11 +19,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import org.apache.commons.lang3.tuple.Pair;
-
-import java.io.File;
-import java.net.URI;
-import java.nio.file.Path;
 
 @SuperBuilder
 @ToString
@@ -50,18 +47,18 @@ import java.nio.file.Path;
             title = "Download file from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
             full = true,
             code = """
-              id: s3_compatible_download
-              namespace: company.team
+                id: s3_compatible_download
+                namespace: company.team
 
-              tasks:
-                - id: download_from_storage
-                  type: io.kestra.plugin.minio.Download
-                  accessKeyId: "<access-key>"
-                  secretKeyId: "<secret-key>"
-                  endpoint: https://<region>.digitaloceanspaces.com
-                  bucket: "kestra-test-bucket"
-                  key: "data/orders.csv"
-              """
+                tasks:
+                  - id: download_from_storage
+                    type: io.kestra.plugin.minio.Download
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    endpoint: https://<region>.digitaloceanspaces.com
+                    bucket: "kestra-test-bucket"
+                    key: "data/orders.csv"
+                """
         )
     },
     metrics = {

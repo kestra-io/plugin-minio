@@ -1,18 +1,15 @@
 package io.kestra.plugin.minio;
 
 import io.kestra.core.http.client.configurations.SslOptions;
-import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.Task;
-import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.annotation.Nullable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-
-import java.util.SequencedSet;
 
 @SuperBuilder
 @ToString
@@ -41,7 +38,7 @@ public abstract class MinioConnection extends Task implements MinioConnectionInt
         @Nullable String endpoint,
         @Nullable String clientPem,
         @Nullable String caPem,
-        @Nullable SslOptions sslOptions
-    ) { }
+        @Nullable SslOptions sslOptions) {
+    }
 
 }

@@ -1,4 +1,5 @@
-@PluginSubGroup(title = "MinIO",categories = { PluginSubGroup.PluginCategory.DATA, PluginSubGroup.PluginCategory.INFRASTRUCTURE }
+@PluginSubGroup(
+    title = "MinIO", categories = { PluginSubGroup.PluginCategory.DATA, PluginSubGroup.PluginCategory.INFRASTRUCTURE }
 )
 package io.kestra.plugin.minio;
 

@@ -1,5 +1,18 @@
 package io.kestra.plugin.minio;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.jupiter.api.Test;
+
 import io.kestra.core.models.executions.Execution;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.triggers.StatefulTriggerInterface;
@@ -7,29 +20,17 @@ import io.kestra.core.queues.QueueFactoryInterface;
 import io.kestra.core.queues.QueueInterface;
 import io.kestra.core.repositories.LocalFlowRepositoryLoader;
 import io.kestra.core.runners.FlowListeners;
-import io.kestra.core.runners.Worker;
 import io.kestra.core.utils.IdUtils;
-import io.kestra.scheduler.AbstractScheduler;
 import io.kestra.core.utils.TestsUtils;
 import io.kestra.jdbc.runner.JdbcScheduler;
 import io.kestra.plugin.minio.model.MinioObject;
+import io.kestra.scheduler.AbstractScheduler;
 import io.kestra.worker.DefaultWorker;
+
 import io.micronaut.context.ApplicationContext;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
-import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
-
-import java.time.Duration;
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -69,7 +70,8 @@ public class TriggerTest extends AbstractMinIoTest {
             AtomicReference<Execution> last = new AtomicReference<>();
 
             // wait for execution
-            Flux<Execution> receive = TestsUtils.receive(executionQueue, executionWithError -> {
+            Flux<Execution> receive = TestsUtils.receive(executionQueue, executionWithError ->
+            {
                 Execution execution = executionWithError.getLeft();
 
                 if (execution.getFlowId().equals("listen")) {
@@ -85,8 +87,12 @@ public class TriggerTest extends AbstractMinIoTest {
             scheduler.run();
             Path flowPath = Files.createTempFile("kestra-minio-listen-", ".yaml");
             String flow;
-            try (var flowStream = Objects.requireNonNull(TriggerTest.class.getClassLoader()
-                .getResourceAsStream("flows/listen.yaml"))) {
+            try (
+                var flowStream = Objects.requireNonNull(
+                    TriggerTest.class.getClassLoader()
+                        .getResourceAsStream("flows/listen.yaml")
+                )
+            ) {
                 flow = new String(flowStream.readAllBytes(), StandardCharsets.UTF_8);
             }
             flow = flow.replace("http://localhost:9000", minIOContainer.getS3URL());

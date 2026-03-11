@@ -1,5 +1,17 @@
 package io.kestra.plugin.minio;
 
+import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
+import org.testcontainers.utility.DockerImageName;
+
 import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.Task;
@@ -9,18 +21,8 @@ import io.kestra.core.storages.StorageInterface;
 import io.kestra.core.tenant.TenantService;
 import io.kestra.core.utils.IdUtils;
 import io.kestra.core.utils.TestsUtils;
-import jakarta.inject.Inject;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
-import org.testcontainers.utility.DockerImageName;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
+import jakarta.inject.Inject;
 
 @KestraTest
 @Testcontainers
@@ -58,9 +60,13 @@ public class AbstractMinIoTest {
     protected StorageInterface storageInterface;
 
     protected static File file() throws URISyntaxException {
-        return new File(Objects.requireNonNull(AbstractMinIoTest.class.getClassLoader()
-                .getResource("application.yml"))
-            .toURI());
+        return new File(
+            Objects.requireNonNull(
+                AbstractMinIoTest.class.getClassLoader()
+                    .getResource("application.yml")
+            )
+                .toURI()
+        );
     }
 
     protected String createBucket() throws Exception {

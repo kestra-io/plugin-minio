@@ -6,6 +6,7 @@ import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
+
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -39,18 +40,18 @@ import lombok.experimental.SuperBuilder;
             title = "Delete file from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
             full = true,
             code = """
-              id: s3_compatible_delete
-              namespace: company.team
+                id: s3_compatible_delete
+                namespace: company.team
 
-              tasks:
-                - id: delete
-                  type: io.kestra.plugin.minio.Delete
-                  accessKeyId: "<access-key>"
-                  secretKeyId: "<secret-key>"
-                  endpoint: https://<region>.digitaloceanspaces.com
-                  bucket: "kestra-test-bucket"
-                  key: "path/to/file"
-              """
+                tasks:
+                  - id: delete
+                    type: io.kestra.plugin.minio.Delete
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    endpoint: https://<region>.digitaloceanspaces.com
+                    bucket: "kestra-test-bucket"
+                    key: "path/to/file"
+                """
         )
     }
 )

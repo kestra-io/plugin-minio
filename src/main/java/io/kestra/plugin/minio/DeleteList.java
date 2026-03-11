@@ -1,5 +1,10 @@
 package io.kestra.plugin.minio;
 
+import java.util.NoSuchElementException;
+import java.util.function.Function;
+
+import org.slf4j.Logger;
+
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Metric;
 import io.kestra.core.models.annotations.Plugin;
@@ -9,19 +14,16 @@ import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.minio.model.MinioObject;
+
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.scheduler.Schedulers;
-
-import java.util.NoSuchElementException;
-import java.util.function.Function;
 
 import static io.kestra.core.utils.Rethrow.throwConsumer;
 import static io.kestra.core.utils.Rethrow.throwFunction;
@@ -53,26 +55,26 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             title = "Delete files from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
             full = true,
             code = """
-              id: s3_compatible_delete_objects
-              namespace: company.team
+                id: s3_compatible_delete_objects
+                namespace: company.team
 
-              tasks:
-                - id: delete_objects
-                  type: io.kestra.plugin.minio.DeleteList
-                  accessKeyId: "<access-key>"
-                  secretKeyId: "<secret-key>"
-                  endpoint: https://<region>.digitaloceanspaces.com
-                  bucket: "kestra-test-bucket"
-                  prefix: "sub-dir"
-              """
+                tasks:
+                  - id: delete_objects
+                    type: io.kestra.plugin.minio.DeleteList
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    endpoint: https://<region>.digitaloceanspaces.com
+                    bucket: "kestra-test-bucket"
+                    prefix: "sub-dir"
+                """
         )
     },
     metrics = {
         @Metric(
-           name = "count",
-           type = Counter.TYPE,
-           unit = "count",
-           description = "The number of objects deleted from the MinIO bucket."
+            name = "count",
+            type = Counter.TYPE,
+            unit = "count",
+            description = "The number of objects deleted from the MinIO bucket."
         ),
         @Metric(
             name = "size",
@@ -112,8 +114,8 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
 
     @Schema(
         title = "A regexp to filter on full key.",
-        description = "ex:\n"+
-            "`regExp: .*` to match all files\n"+
+        description = "ex:\n" +
+            "`regExp: .*` to match all files\n" +
             "`regExp: .*2020-01-0.\\\\.csv` to match files between 01 and 09 of january ending with `.csv`"
     )
     protected Property<String> regexp;
@@ -145,12 +147,14 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
         try (MinioClient client = this.client(runContext)) {
 
             Flux<MinioObject> flowable = Flux.create(
-                throwConsumer(emitter -> {
-                        list(runContext).forEach(emitter::next);
+                throwConsumer(emitter ->
+                {
+                    list(runContext).forEach(emitter::next);
 
-                        emitter.complete();
-                    }
-                ), FluxSink.OverflowStrategy.BUFFER);
+                    emitter.complete();
+                }
+                ), FluxSink.OverflowStrategy.BUFFER
+            );
 
             Flux<Long> result;
 
@@ -215,7 +219,8 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
     }
 
     public static Function<MinioObject, Long> delete(Logger logger, MinioClient client, String bucket) throws Exception {
-        return throwFunction(object -> {
+        return throwFunction(object ->
+        {
             logger.debug("Deleting '{}'", object.getKey());
 
             RemoveObjectArgs.Builder request = RemoveObjectArgs

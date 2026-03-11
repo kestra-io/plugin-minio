@@ -1,12 +1,12 @@
 package io.kestra.plugin.minio.model;
 
+import java.net.URI;
+import java.time.Instant;
+
 import io.minio.messages.Item;
 import lombok.Builder;
 import lombok.Data;
 import lombok.With;
-
-import java.net.URI;
-import java.time.Instant;
 
 @Data
 @Builder

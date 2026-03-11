@@ -1,15 +1,19 @@
 package io.kestra.plugin.minio;
 
+import java.util.Spliterator;
+import java.util.stream.StreamSupport;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Metric;
 import io.kestra.core.models.annotations.Plugin;
-import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.minio.model.MinioObject;
+
 import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
 import io.minio.Result;
@@ -17,9 +21,6 @@ import io.minio.messages.Item;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-
-import java.util.Spliterator;
-import java.util.stream.StreamSupport;
 
 import static io.kestra.core.utils.Rethrow.throwFunction;
 
@@ -50,17 +51,17 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             title = "List files from an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
             full = true,
             code = """
-              id: s3_compatible_list
-              namespace: company.team
+                id: s3_compatible_list
+                namespace: company.team
 
-              tasks:
-                - id: list_objects
-                  type: io.kestra.plugin.minio.List
-                  accessKeyId: "<access-key>"
-                  secretKeyId: "<secret-key>"
-                  endpoint: https://<region>.digitaloceanspaces.com
-                  bucket: "kestra-test-bucket"
-              """
+                tasks:
+                  - id: list_objects
+                    type: io.kestra.plugin.minio.List
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    endpoint: https://<region>.digitaloceanspaces.com
+                    bucket: "kestra-test-bucket"
+                """
         )
     },
     metrics = {
@@ -113,8 +114,8 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
 
     @Schema(
         title = "A regexp to filter on full key.",
-        description = "ex:\n"+
-            "`regExp: .*` to match all files\n"+
+        description = "ex:\n" +
+            "`regExp: .*` to match all files\n" +
             "`regExp: .*2020-01-0.\\\\.csv` to match files between 01 and 09 of january ending with `.csv`"
     )
     protected Property<String> regexp;
@@ -147,7 +148,6 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
                 .bucket(bucket)
                 .recursive(runContext.render(recursive).as(Boolean.class).orElseThrow())
                 .maxKeys(runContext.render(this.maxKeys).as(Integer.class).orElseThrow());
-
 
             runContext.render(this.prefix).as(String.class).ifPresent(requestBuilder::prefix);
             runContext.render(this.startAfter).as(String.class).ifPresent(requestBuilder::startAfter);
@@ -186,12 +186,10 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
     }
 
     private boolean filter(Item object, String regExp, Filter filter) {
-        return
-            (regExp == null || object.objectName().matches(regExp)) &&
-                (filter.equals(Filter.BOTH) ||
-                    (filter.equals(Filter.DIRECTORY) && object.objectName().endsWith("/")) ||
-                    (filter.equals(Filter.FILES) && !object.objectName().endsWith("/"))
-                );
+        return (regExp == null || object.objectName().matches(regExp)) &&
+            (filter.equals(Filter.BOTH) ||
+                (filter.equals(Filter.DIRECTORY) && object.objectName().endsWith("/")) ||
+                (filter.equals(Filter.FILES) && !object.objectName().endsWith("/")));
     }
 
     @Builder

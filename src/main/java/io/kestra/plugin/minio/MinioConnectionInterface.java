@@ -5,6 +5,7 @@ import io.kestra.core.http.client.configurations.SslOptions;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public interface MinioConnectionInterface {
@@ -57,7 +58,8 @@ public interface MinioConnectionInterface {
             runContext.render(this.getEndpoint()).as(String.class).orElse(null),
             runContext.render(this.getClientPem()).as(String.class).orElse(null),
             runContext.render(this.getCaPem()).as(String.class).orElse(null),
-            this.getSsl());
+            this.getSsl()
+        );
     }
 
 }

@@ -1,9 +1,10 @@
 package io.kestra.plugin.minio;
 
-import io.kestra.core.models.property.Property;
-import io.kestra.core.utils.IdUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
+
+import io.kestra.core.models.property.Property;
+import io.kestra.core.utils.IdUtils;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -28,7 +29,7 @@ public class ListTest extends AbstractMinIoTest {
 
         task = list()
             .filter(Property.ofValue(List.Filter.FILES))
-            .prefix(Property.ofValue("tasks/"+dir+"/"))
+            .prefix(Property.ofValue("tasks/" + dir + "/"))
             .build();
         output = task.run(runContext(task));
         assertThat(output.getObjects().size(), is(6));

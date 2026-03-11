@@ -1,6 +1,14 @@
 package io.kestra.plugin.minio;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+
 import io.kestra.core.http.client.configurations.SslOptions;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
@@ -11,17 +19,10 @@ import io.kestra.core.models.triggers.*;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.utils.Rethrow;
 import io.kestra.plugin.minio.model.MinioObject;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-
-import java.sql.Blob;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static io.kestra.core.models.triggers.StatefulTriggerService.*;
 import static io.kestra.core.utils.Rethrow.throwFunction;
@@ -110,30 +111,30 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
             title = "Wait for a list of files on a bucket on an S3-compatible storage — here, Spaces Object Storage from Digital Ocean. Iterate through those files, and move it to another folder.",
             full = true,
             code = """
-              id: trigger_on_s3_compatible_storage
-              namespace: company.team
-              tasks:
-                - id: each
-                  type: io.kestra.plugin.core.flow.ForEach
-                  values: "{{ trigger.objects | jq('.[].uri') }}"
-                  tasks:
-                    - id: return
-                      type: io.kestra.plugin.core.debug.Return
-                      format: "{{ taskrun.value }}"
+                id: trigger_on_s3_compatible_storage
+                namespace: company.team
+                tasks:
+                  - id: each
+                    type: io.kestra.plugin.core.flow.ForEach
+                    values: "{{ trigger.objects | jq('.[].uri') }}"
+                    tasks:
+                      - id: return
+                        type: io.kestra.plugin.core.debug.Return
+                        format: "{{ taskrun.value }}"
 
-              triggers:
-                - id: watch
-                  type: io.kestra.plugin.minio.Trigger
-                  interval: "PT5M"
-                  accessKeyId: "<access-key>"
-                  secretKeyId: "<secret-key>"
-                  endpoint: https://<region>>.digitaloceanspaces.com
-                  bucket: "kestra-test-bucket"
-                  prefix: "sub-dir"
-                  action: MOVE
-                  moveTo:
-                    key: archive
-              """
+                triggers:
+                  - id: watch
+                    type: io.kestra.plugin.minio.Trigger
+                    interval: "PT5M"
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    endpoint: https://<region>>.digitaloceanspaces.com
+                    bucket: "kestra-test-bucket"
+                    prefix: "sub-dir"
+                    action: MOVE
+                    moveTo:
+                      key: archive
+                """
         )
     }
 )
@@ -228,7 +229,8 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
         var actionBlobs = new ArrayList<MinioObject>();
 
         var toFire = run.getObjects().stream()
-            .flatMap(throwFunction(object -> {
+            .flatMap(throwFunction(object ->
+            {
                 var uri = String.format("s3://%s/%s", runContext.render(bucket).as(String.class).orElse(""), object.getKey());
                 var modifiedAt = Optional.ofNullable(object.getLastModified()).orElseGet(Instant::now);
                 var version = Optional.ofNullable(object.getEtag()).orElse(String.valueOf(modifiedAt.toEpochMilli()));
@@ -256,10 +258,12 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
 
                     actionBlobs.add(object);
 
-                    return Stream.of(TriggeredBlob.builder()
-                        .object(downloadedBlob)
-                        .changeType(changeType)
-                        .build());
+                    return Stream.of(
+                        TriggeredBlob.builder()
+                            .object(downloadedBlob)
+                            .changeType(changeType)
+                            .build()
+                    );
                 }
 
                 return Stream.empty();
@@ -272,7 +276,10 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
             return Optional.empty();
         }
 
-        MinioService.performAction(runContext, actionBlobs, runContext.render(this.action).as(Downloads.Action.class).orElse(Downloads.Action.NONE), runContext.render(this.bucket).as(String.class).orElse(null), this, this.moveTo);
+        MinioService.performAction(
+            runContext, actionBlobs, runContext.render(this.action).as(Downloads.Action.class).orElse(Downloads.Action.NONE), runContext.render(this.bucket).as(String.class).orElse(null),
+            this, this.moveTo
+        );
 
         var output = Output.builder().objects(toFire).build();
         Execution execution = TriggerService.generateExecution(this, conditionContext, context, output);
@@ -280,9 +287,9 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
         return Optional.of(execution);
     }
 
-
     private Rethrow.FunctionChecked<MinioObject, MinioObject, Exception> getMinioObject(RunContext runContext) {
-        return object -> {
+        return object ->
+        {
             Download download = Download.builder()
                 .id(this.id)
                 .type(List.class.getName())

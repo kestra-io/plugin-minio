@@ -7,6 +7,7 @@ import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.minio.model.ObjectOutput;
+
 import io.minio.CopyObjectArgs;
 import io.minio.CopySource;
 import io.minio.MinioClient;
@@ -46,22 +47,22 @@ import lombok.experimental.SuperBuilder;
             title = "Copy file in an S3-compatible storage — here, Spaces Object Storage from Digital Ocean.",
             full = true,
             code = """
-              id: s3_compatible_copy
-              namespace: company.team
+                id: s3_compatible_copy
+                namespace: company.team
 
-              tasks:
-                - id: copy_file
-                  type: io.kestra.plugin.minio.Copy
-                  accessKeyId: "<access-key>"
-                  secretKeyId: "<secret-key>"
-                  endpoint: https://<region>.digitaloceanspaces.com
-                  from:
-                    bucket: "my-bucket"
-                    key: "path/to/file"
-                  to:
-                    bucket: "my-bucket2"
-                    key: "path/to/file2"
-              """
+                tasks:
+                  - id: copy_file
+                    type: io.kestra.plugin.minio.Copy
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "<secret-key>"
+                    endpoint: https://<region>.digitaloceanspaces.com
+                    from:
+                      bucket: "my-bucket"
+                      key: "path/to/file"
+                    to:
+                      bucket: "my-bucket2"
+                      key: "path/to/file2"
+                """
         )
     }
 )

@@ -1,29 +1,5 @@
 package io.kestra.plugin.minio;
 
-import io.kestra.core.models.annotations.Example;
-import io.kestra.core.models.annotations.Metric;
-import io.kestra.core.models.annotations.Plugin;
-import io.kestra.core.models.annotations.PluginProperty;
-import io.kestra.core.models.executions.metrics.Counter;
-import io.kestra.core.models.property.Data;
-import io.kestra.core.models.property.Property;
-import io.kestra.core.models.property.URIFetcher;
-import io.kestra.core.models.tasks.RunnableTask;
-import io.kestra.core.runners.RunContext;
-import io.kestra.plugin.minio.model.ObjectOutput;
-import io.minio.MinioAsyncClient;
-import io.minio.ObjectWriteResponse;
-import io.minio.UploadObjectArgs;
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
-import org.apache.commons.io.FilenameUtils;
-import org.jetbrains.annotations.NotNull;
-import reactor.core.publisher.Flux;
-
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
@@ -33,6 +9,31 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+
+import org.apache.commons.io.FilenameUtils;
+import org.jetbrains.annotations.NotNull;
+
+import io.kestra.core.models.annotations.Example;
+import io.kestra.core.models.annotations.Metric;
+import io.kestra.core.models.annotations.Plugin;
+import io.kestra.core.models.executions.metrics.Counter;
+import io.kestra.core.models.property.Data;
+import io.kestra.core.models.property.Property;
+import io.kestra.core.models.property.URIFetcher;
+import io.kestra.core.models.tasks.RunnableTask;
+import io.kestra.core.runners.RunContext;
+import io.kestra.plugin.minio.model.ObjectOutput;
+
+import io.minio.MinioAsyncClient;
+import io.minio.ObjectWriteResponse;
+import io.minio.UploadObjectArgs;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
+import reactor.core.publisher.Flux;
 
 @SuperBuilder
 @ToString
@@ -114,7 +115,7 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     @Schema(
         title = "The file(s) to upload.",
         description = "Can be a single file, a list of files or json array.",
-        anyOf = {List.class, String.class, Map.class}
+        anyOf = { List.class, String.class, Map.class }
     )
     @NotNull
     private Object from;
@@ -157,7 +158,8 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
         }
 
         try {
-            Function<Map<String, Object>, Map<String, String>> mapper = map -> {
+            Function<Map<String, Object>, Map<String, String>> mapper = map ->
+            {
                 Map<String, String> result = new HashMap<>();
                 for (Map.Entry<String, Object> entry : map.entrySet()) {
                     result.put(entry.getKey(), entry.getValue().toString());
@@ -201,7 +203,7 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     }
 
     private Output uploadSingle(RunContext runContext, MinioAsyncClient client,
-                                String bucket, String key, String uri) throws Exception {
+        String bucket, String key, String uri) throws Exception {
         File tmp = copyTemp(runContext, uri);
 
         UploadObjectArgs.Builder builder = UploadObjectArgs.builder()
@@ -225,7 +227,7 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     }
 
     private Output uploadMultiple(RunContext runContext, MinioAsyncClient client,
-                                  String bucket, String baseKey, Map<String, String> files) throws Exception {
+        String bucket, String baseKey, Map<String, String> files) throws Exception {
 
         for (Map.Entry<String, String> entry : files.entrySet()) {
             String relativeName = entry.getKey();

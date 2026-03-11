@@ -1,19 +1,21 @@
 package io.kestra.plugin.minio;
 
+import java.io.File;
+import java.net.URI;
+import java.util.List;
+
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
 import io.kestra.core.models.executions.metrics.Counter;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.utils.FileUtils;
 import io.kestra.plugin.minio.model.MinioObject;
+
 import io.minio.DownloadObjectArgs;
 import io.minio.MinioAsyncClient;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-
-import java.io.File;
-import java.net.URI;
-import java.util.List;
 
 public class MinioService {
 
@@ -23,8 +25,7 @@ public class MinioService {
         Downloads.Action action,
         String bucket,
         MinioConnectionInterface minioConnection,
-        Copy.CopyObject moveTo
-    ) throws Exception {
+        Copy.CopyObject moveTo) throws Exception {
         if (action == Downloads.Action.DELETE) {
             for (MinioObject object : list) {
                 Delete delete = Delete.builder()
@@ -55,14 +56,17 @@ public class MinioService {
                             .key(Property.ofValue(object.getKey()))
                             .build()
                     )
-                    .to(moveTo.toBuilder()
-                        .key(Property.ofValue(
-                            "%s/%s".formatted(
-                                StringUtils.stripEnd(runContext.render(moveTo.getKey()).as(String.class).orElse(null) + "/", "/"),
-                                FilenameUtils.getName(object.getKey())
+                    .to(
+                        moveTo.toBuilder()
+                            .key(
+                                Property.ofValue(
+                                    "%s/%s".formatted(
+                                        StringUtils.stripEnd(runContext.render(moveTo.getKey()).as(String.class).orElse(null) + "/", "/"),
+                                        FilenameUtils.getName(object.getKey())
+                                    )
+                                )
                             )
-                        ))
-                        .build()
+                            .build()
                     )
                     .delete(Property.ofValue(true))
                     .build();
