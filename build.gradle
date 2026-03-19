@@ -109,8 +109,6 @@ dependencies {
     testImplementation group: "io.kestra", name: "tests"
     testImplementation group: "io.kestra", name: "scheduler"
     testImplementation group: "io.kestra", name: "worker"
-    testImplementation "io.kestra.plugin:plugin-docker:1.2.3"
-
     // test
     testImplementation "org.junit.jupiter:junit-jupiter-engine"
     testImplementation "org.hamcrest:hamcrest"
@@ -121,6 +119,9 @@ dependencies {
     testImplementation "org.testcontainers:testcontainers:2.0.3"
     testImplementation "org.testcontainers:junit-jupiter:1.21.4"
     testImplementation "org.testcontainers:minio:1.21.4"
+
+    // sanity checks
+    testImplementation "io.kestra.plugin:plugin-docker:1.2.3"
 }
 
 /**********************************************************************************************************************\
