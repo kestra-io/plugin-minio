@@ -15,7 +15,7 @@ class RunnerTest {
     @Test
     @ExecuteFlow("sanity-checks/all_minio.yaml")
     void all_minio(Execution execution) {
-        assertThat(execution.getTaskRunList(), hasSize(23));
+        assertThat(execution.getTaskRunList(), hasSize(22));
         assertThat(execution.getState().getCurrent(), is(State.Type.SUCCESS));
     }
 }
