@@ -104,10 +104,12 @@ dependencies {
     testImplementation group: "io.kestra", name: "core"
     testImplementation group: "io.kestra", name: "repository-memory"
     testImplementation group: "io.kestra", name: "runner-memory"
+    testImplementation group: "io.kestra", name: "script"
     testImplementation group: "io.kestra", name: "storage-local"
     testImplementation group: "io.kestra", name: "tests"
     testImplementation group: "io.kestra", name: "scheduler"
     testImplementation group: "io.kestra", name: "worker"
+    testImplementation "io.kestra.plugin:plugin-docker:1.2.3"
 
     // test
     testImplementation "org.junit.jupiter:junit-jupiter-engine"
