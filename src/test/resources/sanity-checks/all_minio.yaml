@@ -16,8 +16,7 @@ tasks:
   - id: docker_start
     type: io.kestra.plugin.docker.Run
     containerImage: versity/versitygw:latest
-    portBindings:
-      - "{{ outputs.init.values.port }}:9000"
+    networkMode: host
     env:
       ROOT_ACCESS_KEY_ID: "{{ vars.access_key }}"
       ROOT_ACCESS_KEY: "{{ vars.access_key }}"
@@ -27,7 +26,7 @@ tasks:
       - /bin/sh
       - -c
     commands:
-      - "versitygw --access {{ vars.access_key }} --secret {{ vars.secret_key }} --port :9000 posix /tmp --quiet"
+      - "versitygw --access {{ vars.access_key }} --secret {{ vars.secret_key }} --port :{{ outputs.init.values.port }} posix /tmp --quiet"
     wait: false
 
   - id: wait_for_docker
