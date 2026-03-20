@@ -29,7 +29,7 @@ tasks:
       - /bin/sh
       - -c
     commands:
-      - "versitygw --access {{ vars.access_key }} --secret {{ vars.secret_key }} --port :9000 posix /data --quiet"
+      - "versitygw --access {{ vars.access_key }} --secret {{ vars.secret_key }} --port :9000 --iam-dir /data posix /data --quiet"
     wait: false
 
   - id: wait_for_docker
