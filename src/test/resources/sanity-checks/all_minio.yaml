@@ -29,9 +29,6 @@ tasks:
       - "versitygw --access {{ vars.access_key }} --secret {{ vars.secret_key }} --port :{{ outputs.init.values.port }} posix /tmp --quiet"
     wait: false
 
-  - id: wait_for_docker
-    type: io.kestra.plugin.core.flow.Sleep
-    duration: PT10S
 
   - id: create_target_bucket
     type: io.kestra.plugin.minio.CreateBucket
