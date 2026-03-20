@@ -1,0 +1,210 @@
+id: all_minio
+namespace: sanitychecks.plugin-minio
+
+variables:
+  access_key: testuser
+  secret_key: testpassword
+
+tasks:
+  - id: init
+    type: io.kestra.plugin.core.output.OutputValues
+    values:
+      port: "{{ randomPort() }}"
+      source_bucket: "{{ ('source-' ~ execution.id) | lower }}"
+      target_bucket: "{{ ('target-' ~ execution.id) | lower }}"
+
+  - id: docker_start
+    type: io.kestra.plugin.docker.Run
+    containerImage: versity/versitygw:latest
+    networkMode: host
+    env:
+      ROOT_ACCESS_KEY_ID: "{{ vars.access_key }}"
+      ROOT_ACCESS_KEY: "{{ vars.access_key }}"
+      ROOT_SECRET_ACCESS_KEY: "{{ vars.secret_key }}"
+      ROOT_SECRET_KEY: "{{ vars.secret_key }}"
+    entryPoint:
+      - /bin/sh
+      - -c
+    commands:
+      - "versitygw --access {{ vars.access_key }} --secret {{ vars.secret_key }} --port :{{ outputs.init.values.port }} posix /tmp --quiet"
+    wait: false
+
+
+  - id: create_target_bucket
+    type: io.kestra.plugin.minio.CreateBucket
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.target_bucket }}"
+    retry:
+      type: constant
+      interval: PT2S
+      maxAttempt: 30
+
+  - id: create_source_bucket
+    type: io.kestra.plugin.minio.CreateBucket
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.source_bucket }}"
+
+  - id: write_alpha
+    type: io.kestra.plugin.core.storage.Write
+    content: |
+      alpha sanity payload
+    extension: .txt
+
+  - id: upload_alpha
+    type: io.kestra.plugin.minio.Upload
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.source_bucket }}"
+    from: "{{ outputs.write_alpha.uri }}"
+    key: downloads/source/alpha.txt
+
+  - id: write_beta
+    type: io.kestra.plugin.core.storage.Write
+    content: |
+      beta sanity payload
+    extension: .txt
+
+  - id: write_gamma
+    type: io.kestra.plugin.core.storage.Write
+    content: |
+      gamma sanity payload
+    extension: .txt
+
+  - id: upload_beta
+    type: io.kestra.plugin.minio.Upload
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.source_bucket }}"
+    from: "{{ outputs.write_beta.uri }}"
+    key: downloads/bulk/beta.txt
+
+  - id: upload_gamma
+    type: io.kestra.plugin.minio.Upload
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.source_bucket }}"
+    from: "{{ outputs.write_gamma.uri }}"
+    key: downloads/bulk/gamma.txt
+
+  - id: list_source_before_downloads
+    type: io.kestra.plugin.minio.List
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.source_bucket }}"
+    prefix: downloads/
+    filter: FILES
+
+  - id: download_alpha
+    type: io.kestra.plugin.minio.Download
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.source_bucket }}"
+    key: downloads/source/alpha.txt
+
+  - id: copy_alpha
+    type: io.kestra.plugin.minio.Copy
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    from:
+      bucket: "{{ outputs.init.values.source_bucket }}"
+      key: downloads/source/alpha.txt
+    to:
+      bucket: "{{ outputs.init.values.target_bucket }}"
+      key: copies/alpha-copy.txt
+
+  - id: downloads_move
+    type: io.kestra.plugin.minio.Downloads
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.source_bucket }}"
+    prefix: downloads/bulk
+    filter: FILES
+    action: MOVE
+    moveTo:
+      key: downloads/moved
+
+  - id: list_source_bulk_after_move
+    type: io.kestra.plugin.minio.List
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.source_bucket }}"
+    prefix: downloads/bulk
+    filter: FILES
+
+  - id: list_source_moved
+    type: io.kestra.plugin.minio.List
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.source_bucket }}"
+    prefix: downloads/moved
+    filter: FILES
+
+  - id: delete_alpha
+    type: io.kestra.plugin.minio.Delete
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.source_bucket }}"
+    key: downloads/source/alpha.txt
+
+  - id: delete_list_target
+    type: io.kestra.plugin.minio.DeleteList
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.target_bucket }}"
+    prefix: copies/
+    filter: FILES
+    concurrent: 2
+    errorOnEmpty: true
+
+  - id: list_target_after_delete
+    type: io.kestra.plugin.minio.List
+    endpoint: "http://localhost:{{ outputs.init.values.port }}"
+    accessKeyId: "{{ vars.access_key }}"
+    secretKeyId: "{{ vars.secret_key }}"
+    bucket: "{{ outputs.init.values.target_bucket }}"
+    prefix: copies/
+    filter: FILES
+
+  - id: assert
+    type: io.kestra.plugin.core.execution.Assert
+    conditions:
+      - "{{ outputs.create_source_bucket.bucket == outputs.init.values.source_bucket }}"
+      - "{{ outputs.create_target_bucket.bucket == outputs.init.values.target_bucket }}"
+      - "{{ outputs.upload_alpha.key == 'downloads/source/alpha.txt' }}"
+      - "{{ outputs.upload_beta.key == 'downloads/bulk/beta.txt' }}"
+      - "{{ outputs.upload_gamma.key == 'downloads/bulk/gamma.txt' }}"
+      - "{{ outputs.list_source_before_downloads.objects | length == 3 }}"
+      - "{{ read(outputs.download_alpha.uri) == 'alpha sanity payload\n' }}"
+      - "{{ outputs.copy_alpha.bucket == outputs.init.values.target_bucket }}"
+      - "{{ outputs.copy_alpha.key == 'copies/alpha-copy.txt' }}"
+      - "{{ outputs.downloads_move.objects | length == 2 }}"
+      - "{{ outputs.downloads_move.outputFiles | length == 2 }}"
+      - "{{ outputs.list_source_bulk_after_move.objects | length == 0 }}"
+      - "{{ outputs.list_source_moved.objects | length == 2 }}"
+      - "{{ outputs.delete_alpha.key == 'downloads/source/alpha.txt' }}"
+      - "{{ outputs.delete_list_target.count == 1 }}"
+      - "{{ outputs.delete_list_target.size > 0 }}"
+      - "{{ outputs.list_target_after_delete.objects | length == 0 }}"
+
+finally:
+  - id: purge
+    type: io.kestra.plugin.core.storage.PurgeCurrentExecutionFiles
+
+  - id: docker_stop
+    type: io.kestra.plugin.docker.Stop
+    containerId: "{{ outputs.docker_start.taskRunner.containerId }}"
