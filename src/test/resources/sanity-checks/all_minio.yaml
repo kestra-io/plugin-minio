@@ -16,7 +16,10 @@ tasks:
   - id: docker_start
     type: io.kestra.plugin.docker.Run
     containerImage: versity/versitygw:latest
-    networkMode: host
+    portBindings:
+      - "{{ outputs.init.values.port }}:9000"
+    volumes:
+      - "vgw-{{ execution.id }}:/data"
     env:
       ROOT_ACCESS_KEY_ID: "{{ vars.access_key }}"
       ROOT_ACCESS_KEY: "{{ vars.access_key }}"
@@ -26,9 +29,12 @@ tasks:
       - /bin/sh
       - -c
     commands:
-      - "versitygw --access {{ vars.access_key }} --secret {{ vars.secret_key }} --port :{{ outputs.init.values.port }} posix /tmp --quiet"
+      - "versitygw --access {{ vars.access_key }} --secret {{ vars.secret_key }} --port :9000 --iam-dir /data posix /data --quiet"
     wait: false
 
+  - id: wait_for_docker
+    type: io.kestra.plugin.core.flow.Sleep
+    duration: PT10S
 
   - id: create_target_bucket
     type: io.kestra.plugin.minio.CreateBucket
