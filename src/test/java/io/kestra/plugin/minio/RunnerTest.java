@@ -13,9 +13,9 @@ import static org.hamcrest.Matchers.is;
 @KestraTest(startRunner = true)
 class RunnerTest {
     @Test
-    @ExecuteFlow(value = "sanity-checks/all_minio.yaml", timeout = "PT180S")
+    @ExecuteFlow(value = "sanity-checks/all_minio.yaml")
     void all_minio(Execution execution) {
-        assertThat(execution.getTaskRunList(), hasSize(22));
+        assertThat(execution.getTaskRunList(), hasSize(23));
         assertThat(execution.getState().getCurrent(), is(State.Type.SUCCESS));
     }
 }
