@@ -9,9 +9,9 @@ import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.minio.model.ObjectOutput;
 
 import io.minio.CopyObjectArgs;
-import io.minio.CopySource;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
+import io.minio.SourceObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -92,7 +92,7 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
     @Override
     public Output run(RunContext runContext) throws Exception {
         try (MinioClient minioClient = this.client(runContext)) {
-            CopySource.Builder sourceBuilder = CopySource.builder()
+            SourceObject.Builder sourceBuilder = SourceObject.builder()
                 .bucket(runContext.render(this.from.bucket).as(String.class).orElse(null))
                 .object(runContext.render(this.from.key).as(String.class).orElse(null));
 
