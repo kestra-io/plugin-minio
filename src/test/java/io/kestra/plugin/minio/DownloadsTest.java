@@ -26,6 +26,7 @@ public class DownloadsTest extends AbstractMinIoTest {
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .action(Property.ofValue(Downloads.Action.DELETE))
             .build();
 
@@ -54,6 +55,7 @@ public class DownloadsTest extends AbstractMinIoTest {
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .action(Property.ofValue(Downloads.Action.MOVE))
             .moveTo(
                 Copy.CopyObject.builder()

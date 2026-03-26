@@ -3,7 +3,6 @@ package io.kestra.plugin.minio;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.jupiter.api.Test;
@@ -35,6 +34,7 @@ public class AllTest extends AbstractMinIoTest {
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .prefix(Property.ofValue("tasks/upload/"))
             .build();
 
@@ -49,6 +49,7 @@ public class AllTest extends AbstractMinIoTest {
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .key(Property.ofValue(key))
             .build();
 
@@ -68,6 +69,7 @@ public class AllTest extends AbstractMinIoTest {
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .key(Property.ofValue(key))
             .build();
 
@@ -80,9 +82,8 @@ public class AllTest extends AbstractMinIoTest {
             ExecutionException.class,
             () -> download.run(runContext(download))
         );
-        assertThat(exp.getCause(), instanceOf(CompletionException.class));
-        CompletionException cause = (CompletionException) exp.getCause();
-        ErrorResponseException response = ((ErrorResponseException) cause.getCause());
+        assertThat(exp.getCause(), instanceOf(ErrorResponseException.class));
+        ErrorResponseException response = (ErrorResponseException) exp.getCause();
 
         assertThat(response.response().code(), is(404));
         assertThat(response.errorResponse().code(), is("NoSuchKey"));

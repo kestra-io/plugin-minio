@@ -39,6 +39,7 @@ public class CopyTest extends AbstractMinIoTest {
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .from(
                 Copy.CopyObjectFrom
                     .builder()
@@ -84,6 +85,7 @@ public class CopyTest extends AbstractMinIoTest {
                 "--port", ":9000",
                 "--cert", "/root/.minio/certs/server-cert.pem",
                 "--key", "/root/.minio/certs/server-key.pem",
+                "--region", "us-east-2",
                 "posix", "/data",
                 "--quiet"
             )
@@ -102,6 +104,7 @@ public class CopyTest extends AbstractMinIoTest {
                 .accessKeyId(Property.ofValue(tlsContainer.getUserName()))
                 .secretKeyId(Property.ofValue(tlsContainer.getPassword()))
                 .bucket(Property.ofValue("tls-bucket"))
+                .region(Property.ofValue("us-east-2"))
                 .caPem(Property.ofValue(caPem))
                 .clientPem(Property.ofValue(clientPem))
                 .build();
@@ -116,6 +119,7 @@ public class CopyTest extends AbstractMinIoTest {
                 .endpoint(Property.ofValue(endpoint))
                 .accessKeyId(Property.ofValue(tlsContainer.getUserName()))
                 .secretKeyId(Property.ofValue(tlsContainer.getPassword()))
+                .region(Property.ofValue("us-east-2"))
                 .bucket(Property.ofValue("tls-bucket"))
                 .from(source.toString())
                 .key(Property.ofValue("tls.txt"))
@@ -131,6 +135,7 @@ public class CopyTest extends AbstractMinIoTest {
                 .endpoint(Property.ofValue(endpoint))
                 .accessKeyId(Property.ofValue(tlsContainer.getUserName()))
                 .secretKeyId(Property.ofValue(tlsContainer.getPassword()))
+                .region(Property.ofValue("us-east-2"))
                 .caPem(Property.ofValue(caPem))
                 .clientPem(Property.ofValue(clientPem))
                 .from(

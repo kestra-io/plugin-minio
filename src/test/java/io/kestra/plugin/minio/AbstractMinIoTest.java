@@ -81,6 +81,7 @@ public class AbstractMinIoTest {
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
             .bucket(Property.ofValue(bucket))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .build();
 
         CreateBucket.Output createOutput = createBucket.run(runContext(createBucket));
@@ -112,6 +113,7 @@ public class AbstractMinIoTest {
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
             .bucket(Property.ofValue(bucket))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .from(source.toString())
             .key(Property.ofValue(dir + "/" + out + ".yml"))
             .build();
@@ -139,6 +141,7 @@ public class AbstractMinIoTest {
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .from(source.toString())
             .key(Property.ofValue(key))
             .build();
@@ -158,6 +161,7 @@ public class AbstractMinIoTest {
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
             .bucket(Property.ofValue(this.BUCKET))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .includeVersions(Property.ofValue(true));
     }
 
