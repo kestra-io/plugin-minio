@@ -30,6 +30,7 @@ public class UploadsTest extends AbstractMinIoTest {
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .from(java.util.List.of(source1.toString(), source2.toString(), source3.toString(), source4.toString()))
             .key(Property.ofValue(IdUtils.create() + "/"))
             .build();
@@ -43,6 +44,7 @@ public class UploadsTest extends AbstractMinIoTest {
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .prefix(Property.ofValue(result.getKey()))
             .build();
 
@@ -65,6 +67,7 @@ public class UploadsTest extends AbstractMinIoTest {
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .from(java.util.List.of(source.toString()))
             .key(Property.ofValue(IdUtils.create() + "/file.json"))
             .build();
@@ -80,6 +83,7 @@ public class UploadsTest extends AbstractMinIoTest {
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
             .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
             .prefix(Property.ofValue(uploadOutput.getKey()))
             .build();
 

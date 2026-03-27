@@ -8,7 +8,7 @@ triggers:
     interval: PT10S
     action: DELETE
     endpoint: http://localhost:9000
-    region: us-east-1
+    region: us-east-2
     accessKeyId: testuser
     secretKeyId: testpassword
 

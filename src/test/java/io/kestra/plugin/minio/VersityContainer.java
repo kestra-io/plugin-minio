@@ -9,6 +9,7 @@ import org.testcontainers.utility.DockerImageName;
 public class VersityContainer extends GenericContainer<VersityContainer> {
     private static final int S3_PORT = 9000;
     private static final String ROOT_PATH = "/data";
+    private static final String REGION = "us-east-2";
 
     private String userName;
     private String password;
@@ -48,6 +49,10 @@ public class VersityContainer extends GenericContainer<VersityContainer> {
         return "http://" + getHost() + ":" + getMappedPort(S3_PORT);
     }
 
+    public String getRegion() {
+        return REGION;
+    }
+
     private void applyCredentials() {
         withEnv("ROOT_ACCESS_KEY_ID", userName);
         withEnv("ROOT_ACCESS_KEY", userName);
@@ -57,6 +62,7 @@ public class VersityContainer extends GenericContainer<VersityContainer> {
             "--access", userName,
             "--secret", password,
             "--port", ":" + S3_PORT,
+            "--region", REGION,
             "posix", ROOT_PATH,
             "--quiet"
         );
