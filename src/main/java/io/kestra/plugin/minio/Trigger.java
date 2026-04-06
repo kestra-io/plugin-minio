@@ -26,6 +26,7 @@ import lombok.experimental.SuperBuilder;
 
 import static io.kestra.core.models.triggers.StatefulTriggerService.*;
 import static io.kestra.core.utils.Rethrow.throwFunction;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -182,12 +183,14 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
         title = "Client PEM certificate content",
         description = "PEM client certificate as text, used to authenticate the connection to enterprise AI endpoints."
     )
+    @PluginProperty(group = "advanced")
     private Property<String> clientPem;
 
     @Schema(
         title = "CA PEM certificate content",
         description = "CA certificate as text, used to verify SSL/TLS connections when using custom endpoints."
     )
+    @PluginProperty(group = "advanced")
     private Property<String> caPem;
 
     protected SslOptions ssl;

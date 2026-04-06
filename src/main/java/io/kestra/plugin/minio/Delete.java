@@ -63,12 +63,13 @@ public class Delete extends AbstractMinioObject implements RunnableTask<Delete.O
     @Schema(
         title = "The key to delete."
     )
+    @PluginProperty(group = "connection")
     private Property<String> key;
 
     @Schema(
         title = "Indicates whether Object Lock should bypass Governance-mode restrictions to process this operation."
     )
-    @PluginProperty
+    @PluginProperty(group = "advanced")
     private Property<Boolean> bypassGovernanceRetention;
 
     @Override
