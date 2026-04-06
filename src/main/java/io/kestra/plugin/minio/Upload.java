@@ -34,6 +34,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import reactor.core.publisher.Flux;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -110,6 +111,7 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
         title = "The key where to upload the file.",
         description = "a full key (with filename) or the directory path if from is multiple files."
     )
+    @PluginProperty(group = "connection")
     private Property<String> key;
 
     @Schema(
@@ -118,16 +120,19 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
         anyOf = { List.class, String.class, Map.class }
     )
     @NotNull
+    @PluginProperty(group = "source")
     private Object from;
 
     @Schema(
         title = "A standard MIME type describing the format of the contents."
     )
+    @PluginProperty(group = "advanced")
     private Property<String> contentType;
 
     @Schema(
         title = "A map of metadata to store with the object."
     )
+    @PluginProperty(group = "advanced")
     private Property<Map<String, String>> metadata;
 
     @Override

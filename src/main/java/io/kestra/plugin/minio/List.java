@@ -23,6 +23,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import static io.kestra.core.utils.Rethrow.throwFunction;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -87,22 +88,26 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
     @Schema(
         title = "Limits the response to keys that begin with the specified prefix."
     )
+    @PluginProperty(group = "source")
     private Property<String> prefix;
 
     @Schema(
         title = "Limits the response to keys that ends with the specified string."
     )
+    @PluginProperty(group = "advanced")
     private Property<String> startAfter;
 
     @Schema(
         title = "A delimiter is a character you use to group keys."
     )
+    @PluginProperty(group = "processing")
     private Property<String> delimiter;
 
     @Schema(
         title = "Marker is where you want to start listing from.",
         description = "Start listing after this specified key. Marker can be any key in the bucket."
     )
+    @PluginProperty(group = "source")
     private Property<String> marker;
 
     @Schema(
@@ -110,6 +115,7 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
         description = "By default, the action returns up to 1,000 key names. The response might contain fewer keys but will never contain more."
     )
     @Builder.Default
+    @PluginProperty(group = "connection")
     private Property<Integer> maxKeys = Property.ofValue(1000);
 
     @Schema(
@@ -118,24 +124,28 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
             "`regExp: .*` to match all files\n" +
             "`regExp: .*2020-01-0.\\\\.csv` to match files between 01 and 09 of january ending with `.csv`"
     )
+    @PluginProperty(group = "processing")
     protected Property<String> regexp;
 
     @Schema(
         title = "The type of objects to filter: files, directory, or both."
     )
     @Builder.Default
+    @PluginProperty(group = "processing")
     protected final Property<Filter> filter = Property.ofValue(Filter.BOTH);
 
     @Schema(
         title = "Indicates whether it should look into subfolders."
     )
     @Builder.Default
+    @PluginProperty(group = "advanced")
     public Property<Boolean> recursive = Property.ofValue(true);
 
     @Schema(
         title = "Indicates whether task should include versions in output."
     )
     @Builder.Default
+    @PluginProperty(group = "advanced")
     public Property<Boolean> includeVersions = Property.ofValue(true);
 
     @Override

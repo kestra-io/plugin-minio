@@ -13,6 +13,7 @@ import io.minio.errors.InvalidResponseException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -63,6 +64,7 @@ public class CreateBucket extends AbstractMinioObject implements RunnableTask<Cr
     @Schema(
         title = "Specifies whether you want Object Lock to be enabled for the new bucket."
     )
+    @PluginProperty(group = "connection")
     private Property<Boolean> objectLockEnabledForBucket;
 
     @Override

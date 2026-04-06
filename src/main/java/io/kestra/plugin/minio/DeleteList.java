@@ -92,17 +92,20 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
     @Schema(
         title = "Limits the response to keys that begin with the specified prefix."
     )
+    @PluginProperty(group = "source")
     private Property<String> prefix;
 
     @Schema(
         title = "A delimiter is a character you use to group keys."
     )
+    @PluginProperty(group = "processing")
     private Property<String> delimiter;
 
     @Schema(
         title = "Marker is where you want to start listing from.",
         description = "Start listing after this specified key. Marker can be any key in the bucket."
     )
+    @PluginProperty(group = "source")
     private Property<String> marker;
 
     @Schema(
@@ -110,6 +113,7 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
         description = "By default, the action returns up to 1,000 key names. The response might contain fewer keys but will never contain more."
     )
     @Builder.Default
+    @PluginProperty(group = "connection")
     private Property<Integer> maxKeys = Property.ofValue(1000);
 
     @Schema(
@@ -118,6 +122,7 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
             "`regExp: .*` to match all files\n" +
             "`regExp: .*2020-01-0.\\\\.csv` to match files between 01 and 09 of january ending with `.csv`"
     )
+    @PluginProperty(group = "processing")
     protected Property<String> regexp;
 
     @Schema(
@@ -130,13 +135,14 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
     @Schema(
         title = "Number of concurrent parallels deletion"
     )
-    @PluginProperty
+    @PluginProperty(group = "execution")
     private Integer concurrent;
 
     @Schema(
         title = "raise an error if the file is not found"
     )
     @Builder.Default
+    @PluginProperty(group = "reliability")
     private final Property<Boolean> errorOnEmpty = Property.ofValue(false);
 
     @Override

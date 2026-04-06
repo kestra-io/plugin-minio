@@ -19,6 +19,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -78,11 +79,13 @@ public class Download extends AbstractMinioObject implements RunnableTask<Downlo
     @Schema(
         title = "The key of a file to download."
     )
+    @PluginProperty(group = "connection")
     private Property<String> key;
 
     @Schema(
         title = "The specific version of the object."
     )
+    @PluginProperty(group = "advanced")
     protected Property<String> versionId;
 
     @Override

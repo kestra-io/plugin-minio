@@ -74,19 +74,20 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
     @Schema(
         title = "The source bucket and key."
     )
-    @PluginProperty
+    @PluginProperty(group = "source")
     private CopyObjectFrom from;
 
     @Schema(
         title = "The destination bucket and key."
     )
-    @PluginProperty
+    @PluginProperty(group = "destination")
     private CopyObject to;
 
     @Schema(
         title = "Whether to delete the source file after download."
     )
     @Builder.Default
+    @PluginProperty(group = "advanced")
     private Property<Boolean> delete = Property.ofValue(false);
 
     @Override

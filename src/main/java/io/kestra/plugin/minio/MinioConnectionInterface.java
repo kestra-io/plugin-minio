@@ -13,41 +13,45 @@ public interface MinioConnectionInterface {
     @Schema(
         title = "URL to the MinIO endpoint."
     )
+    @PluginProperty(group = "connection")
     Property<String> getEndpoint();
 
     @Schema(
         title = "Access Key Id for authentication."
     )
+    @PluginProperty(group = "advanced")
     Property<String> getAccessKeyId();
 
     @Schema(
         title = "Secret Key Id for authentication."
     )
+    @PluginProperty(group = "advanced")
     Property<String> getSecretKeyId();
 
     @Schema(
         title = "MinIO region with which the SDK should communicate."
     )
+    @PluginProperty(group = "connection")
     Property<String> getRegion();
 
     @Schema(
         title = "Client PEM certificate content",
         description = "PEM client certificate as text, used to authenticate the connection to MinIO (mTLS)."
     )
-    @PluginProperty
+    @PluginProperty(group = "advanced")
     Property<String> getClientPem();
 
     @Schema(
         title = "CA PEM certificate content",
         description = "CA certificate as text, used to verify SSL/TLS connections to custom MinIO endpoints."
     )
-    @PluginProperty
+    @PluginProperty(group = "advanced")
     Property<String> getCaPem();
 
     @Schema(
         title = "SSL/TLS configuration options"
     )
-    @PluginProperty
+    @PluginProperty(group = "connection")
     SslOptions getSsl();
 
     default MinioConnection.MinioClientConfig minioClientConfig(final RunContext runContext) throws IllegalVariableEvaluationException {
