@@ -4,12 +4,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.kestra.core.models.conditions.ConditionContext;
 import org.junit.jupiter.api.Test;
 
 import io.kestra.core.junit.annotations.KestraTest;
@@ -112,12 +114,12 @@ public class TriggerTest extends AbstractMinIoTest {
 
         var key = upload("trigger/on-create", bucket);
 
-        var context = TestsUtils.mockTrigger(runContextFactory, trigger);
-        Optional<Execution> createExecution = trigger.evaluate(context.getKey(), context.getValue());
+        Map.Entry<ConditionContext, io.kestra.core.scheduler.model.TriggerState> context = TestsUtils.mockTrigger(runContextFactory, trigger);
+        Optional<Execution> createExecution = trigger.evaluate(context.getKey(), context.getValue().context());
 
         assertThat(createExecution.isPresent(), is(true));
 
-        Optional<Execution> updateExecution = trigger.evaluate(context.getKey(), context.getValue());
+        Optional<Execution> updateExecution = trigger.evaluate(context.getKey(), context.getValue().context());
 
         assertThat(updateExecution.isPresent(), is(false));
     }
@@ -143,14 +145,14 @@ public class TriggerTest extends AbstractMinIoTest {
             .interval(Duration.ofSeconds(10))
             .build();
 
-        var context = TestsUtils.mockTrigger(runContextFactory, trigger);
+        Map.Entry<ConditionContext, io.kestra.core.scheduler.model.TriggerState> context = TestsUtils.mockTrigger(runContextFactory, trigger);
 
-        trigger.evaluate(context.getKey(), context.getValue());
+        trigger.evaluate(context.getKey(), context.getValue().context());
 
         update(key, bucket);
         Thread.sleep(2000);
 
-        Optional<Execution> updateExecution = trigger.evaluate(context.getKey(), context.getValue());
+        Optional<Execution> updateExecution = trigger.evaluate(context.getKey(), context.getValue().context());
         assertThat(updateExecution.isPresent(), is(true));
     }
 }
