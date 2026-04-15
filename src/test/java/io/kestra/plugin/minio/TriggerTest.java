@@ -6,28 +6,23 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 
+import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.executions.Execution;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.triggers.StatefulTriggerInterface;
 import io.kestra.core.queues.QueueFactoryInterface;
 import io.kestra.core.queues.QueueInterface;
 import io.kestra.core.repositories.LocalFlowRepositoryLoader;
-import io.kestra.core.runners.FlowListeners;
 import io.kestra.core.utils.IdUtils;
 import io.kestra.core.utils.TestsUtils;
-import io.kestra.jdbc.runner.JdbcScheduler;
 import io.kestra.plugin.minio.model.MinioObject;
-import io.kestra.scheduler.AbstractScheduler;
-import io.kestra.worker.DefaultWorker;
 
-import io.micronaut.context.ApplicationContext;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import reactor.core.publisher.Flux;
@@ -35,13 +30,8 @@ import reactor.core.publisher.Flux;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+@KestraTest(startRunner = true, startScheduler = true)
 public class TriggerTest extends AbstractMinIoTest {
-
-    @Inject
-    private ApplicationContext applicationContext;
-
-    @Inject
-    private FlowListeners flowListenersService;
 
     @Inject
     @Named(QueueFactoryInterface.EXECUTION_NAMED)
@@ -56,68 +46,49 @@ public class TriggerTest extends AbstractMinIoTest {
         this.createBucket(bucket);
         List listTask = list().bucket(Property.ofValue(bucket)).build();
 
-        // mock flow listeners
         CountDownLatch queueCount = new CountDownLatch(1);
+        AtomicReference<Execution> last = new AtomicReference<>();
 
-        // scheduler
+        Flux<Execution> receive = TestsUtils.receive(executionQueue, executionWithError -> {
+            Execution execution = executionWithError.getLeft();
+
+            if (execution.getFlowId().equals("listen")) {
+                last.set(execution);
+                queueCount.countDown();
+            }
+        });
+
+        upload("trigger/", bucket);
+        upload("trigger/", bucket);
+
+        Path flowPath = Files.createTempFile("kestra-minio-listen-", ".yaml");
+        String flow;
         try (
-            DefaultWorker worker = applicationContext.createBean(DefaultWorker.class, UUID.randomUUID().toString(), 8, null);
-            AbstractScheduler scheduler = new JdbcScheduler(
-                this.applicationContext,
-                this.flowListenersService
+            var flowStream = Objects.requireNonNull(
+                TriggerTest.class.getClassLoader()
+                    .getResourceAsStream("flows/listen.yaml")
             )
         ) {
-            AtomicReference<Execution> last = new AtomicReference<>();
-
-            // wait for execution
-            Flux<Execution> receive = TestsUtils.receive(executionQueue, executionWithError ->
-            {
-                Execution execution = executionWithError.getLeft();
-
-                if (execution.getFlowId().equals("listen")) {
-                    last.set(execution);
-                    queueCount.countDown();
-                }
-            });
-
-            upload("trigger/", bucket);
-            upload("trigger/", bucket);
-
-            worker.run();
-            scheduler.run();
-            Path flowPath = Files.createTempFile("kestra-minio-listen-", ".yaml");
-            String flow;
-            try (
-                var flowStream = Objects.requireNonNull(
-                    TriggerTest.class.getClassLoader()
-                        .getResourceAsStream("flows/listen.yaml")
-                )
-            ) {
-                flow = new String(flowStream.readAllBytes(), StandardCharsets.UTF_8);
-            }
-            flow = flow.replace("http://localhost:9000", minIOContainer.getS3URL());
-            Files.writeString(flowPath, flow, StandardCharsets.UTF_8);
-
-            repositoryLoader.load(flowPath.toUri().toURL());
-
-            boolean await = queueCount.await(10, TimeUnit.SECONDS);
-            try {
-                assertThat(await, is(true));
-            } finally {
-                worker.shutdown();
-                receive.blockLast();
-            }
-
-            @SuppressWarnings("unchecked")
-            java.util.List<MinioObject> trigger = (java.util.List<MinioObject>) last.get().getTrigger().getVariables().get("objects");
-
-            assertThat(trigger.size(), is(2));
-
-            int remainingFilesOnBucket = listTask.run(runContext(listTask))
-                .getObjects()
-                .size();
-            assertThat(remainingFilesOnBucket, is(0));
+            flow = new String(flowStream.readAllBytes(), StandardCharsets.UTF_8);
         }
+        flow = flow.replace("http://localhost:9000", minIOContainer.getS3URL());
+        Files.writeString(flowPath, flow, StandardCharsets.UTF_8);
+
+        repositoryLoader.load(flowPath.toUri().toURL());
+
+        boolean await = queueCount.await(15, TimeUnit.SECONDS);
+        assertThat(await, is(true));
+        receive.blockLast();
+
+        @SuppressWarnings("unchecked")
+        java.util.List<MinioObject> trigger = (java.util.List<MinioObject>) last.get().getTrigger().getVariables().get("objects");
+
+        assertThat(trigger.size(), is(2));
+
+        int remainingFilesOnBucket = listTask.run(runContext(listTask))
+            .getObjects()
+            .size();
+        assertThat(remainingFilesOnBucket, is(0));
     }
 
     @Test
