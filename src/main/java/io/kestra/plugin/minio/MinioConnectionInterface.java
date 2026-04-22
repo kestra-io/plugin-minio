@@ -19,13 +19,13 @@ public interface MinioConnectionInterface {
     @Schema(
         title = "Access Key Id for authentication."
     )
-    @PluginProperty(group = "advanced")
+    @PluginProperty(secret = true, group = "advanced")
     Property<String> getAccessKeyId();
 
     @Schema(
         title = "Secret Key Id for authentication."
     )
-    @PluginProperty(group = "advanced")
+    @PluginProperty(secret = true, group = "advanced")
     Property<String> getSecretKeyId();
 
     @Schema(

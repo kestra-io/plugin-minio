@@ -63,8 +63,8 @@ import io.kestra.core.models.annotations.PluginProperty;
                   - id: watch
                     type: io.kestra.plugin.minio.Trigger
                     interval: "PT5M"
-                    accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    accessKeyId: "{{ secret('MINIO_ACCESS_KEY_ID') }}"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     region: "eu-central-1"
                     bucket: "my-bucket"
                     prefix: "sub-dir"
@@ -90,8 +90,8 @@ import io.kestra.core.models.annotations.PluginProperty;
                         format: "{{ taskrun.value }}"
                       - id: delete
                         type: io.kestra.plugin.minio.Delete
-                        accessKeyId: "<access-key>"
-                        secretKeyId: "<secret-key>"
+                        accessKeyId: "{{ secret('MINIO_ACCESS_KEY_ID') }}"
+                        secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                         region: "eu-central-1"
                         bucket: "my-bucket"
                         key: "{{ taskrun.value }}"
@@ -100,8 +100,8 @@ import io.kestra.core.models.annotations.PluginProperty;
                   - id: watch
                     type: io.kestra.plugin.minio.Trigger
                     interval: "PT5M"
-                    accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    accessKeyId: "{{ secret('MINIO_ACCESS_KEY_ID') }}"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     region: "eu-central-1"
                     bucket: "my-bucket"
                     prefix: "sub-dir"
@@ -127,8 +127,8 @@ import io.kestra.core.models.annotations.PluginProperty;
                   - id: watch
                     type: io.kestra.plugin.minio.Trigger
                     interval: "PT5M"
-                    accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    accessKeyId: "{{ secret('MINIO_ACCESS_KEY_ID') }}"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     endpoint: https://<region>>.digitaloceanspaces.com
                     bucket: "kestra-test-bucket"
                     prefix: "sub-dir"
@@ -144,8 +144,10 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     @Builder.Default
     private final Duration interval = Duration.ofSeconds(60);
 
+    @PluginProperty(secret = true)
     protected Property<String> accessKeyId;
 
+    @PluginProperty(secret = true)
     protected Property<String> secretKeyId;
 
     protected Property<String> region;
