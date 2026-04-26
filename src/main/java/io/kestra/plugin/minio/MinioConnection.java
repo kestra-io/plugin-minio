@@ -1,6 +1,5 @@
 package io.kestra.plugin.minio;
 
-import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.http.client.configurations.SslOptions;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.Task;
@@ -21,9 +20,7 @@ public abstract class MinioConnection extends Task implements MinioConnectionInt
 
     protected Property<String> region;
 
-    @PluginProperty(secret = true)
     protected Property<String> accessKeyId;
-    @PluginProperty(secret = true)
     protected Property<String> secretKeyId;
 
     protected Property<String> endpoint;
