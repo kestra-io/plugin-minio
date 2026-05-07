@@ -16,16 +16,13 @@ import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.executions.Execution;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.triggers.StatefulTriggerInterface;
-import io.kestra.core.queues.QueueFactoryInterface;
-import io.kestra.core.queues.QueueInterface;
+import io.kestra.core.queues.DispatchQueueInterface;
 import io.kestra.core.repositories.LocalFlowRepositoryLoader;
 import io.kestra.core.utils.IdUtils;
 import io.kestra.core.utils.TestsUtils;
 import io.kestra.plugin.minio.model.MinioObject;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
-import reactor.core.publisher.Flux;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -34,8 +31,7 @@ import static org.hamcrest.Matchers.is;
 public class TriggerTest extends AbstractMinIoTest {
 
     @Inject
-    @Named(QueueFactoryInterface.EXECUTION_NAMED)
-    private QueueInterface<Execution> executionQueue;
+    private DispatchQueueInterface<Execution> executionQueue;
 
     @Inject
     protected LocalFlowRepositoryLoader repositoryLoader;
@@ -49,9 +45,7 @@ public class TriggerTest extends AbstractMinIoTest {
         CountDownLatch queueCount = new CountDownLatch(1);
         AtomicReference<Execution> last = new AtomicReference<>();
 
-        Flux<Execution> receive = TestsUtils.receive(executionQueue, executionWithError -> {
-            Execution execution = executionWithError.getLeft();
-
+        executionQueue.addListener(execution -> {
             if (execution.getFlowId().equals("listen")) {
                 last.set(execution);
                 queueCount.countDown();
@@ -76,9 +70,8 @@ public class TriggerTest extends AbstractMinIoTest {
 
         repositoryLoader.load(flowPath.toUri().toURL());
 
-        boolean await = queueCount.await(15, TimeUnit.SECONDS);
+        boolean await = queueCount.await(1, TimeUnit.MINUTES);
         assertThat(await, is(true));
-        receive.blockLast();
 
         @SuppressWarnings("unchecked")
         java.util.List<MinioObject> trigger = (java.util.List<MinioObject>) last.get().getTrigger().getVariables().get("objects");
@@ -113,11 +106,11 @@ public class TriggerTest extends AbstractMinIoTest {
         var key = upload("trigger/on-create", bucket);
 
         var context = TestsUtils.mockTrigger(runContextFactory, trigger);
-        Optional<Execution> createExecution = trigger.evaluate(context.getKey(), context.getValue());
+        Optional<Execution> createExecution = trigger.evaluate(context.getKey(), context.getValue().context());
 
         assertThat(createExecution.isPresent(), is(true));
 
-        Optional<Execution> updateExecution = trigger.evaluate(context.getKey(), context.getValue());
+        Optional<Execution> updateExecution = trigger.evaluate(context.getKey(), context.getValue().context());
 
         assertThat(updateExecution.isPresent(), is(false));
     }
@@ -145,12 +138,12 @@ public class TriggerTest extends AbstractMinIoTest {
 
         var context = TestsUtils.mockTrigger(runContextFactory, trigger);
 
-        trigger.evaluate(context.getKey(), context.getValue());
+        trigger.evaluate(context.getKey(), context.getValue().context());
 
         update(key, bucket);
         Thread.sleep(2000);
 
-        Optional<Execution> updateExecution = trigger.evaluate(context.getKey(), context.getValue());
+        Optional<Execution> updateExecution = trigger.evaluate(context.getKey(), context.getValue().context());
         assertThat(updateExecution.isPresent(), is(true));
     }
 }
