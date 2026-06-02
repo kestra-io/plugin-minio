@@ -45,7 +45,7 @@ tasks:
     retry:
       type: constant
       interval: PT2S
-      maxAttempt: 30
+      maxAttempts: 30
 
   - id: create_source_bucket
     type: io.kestra.plugin.minio.CreateBucket
