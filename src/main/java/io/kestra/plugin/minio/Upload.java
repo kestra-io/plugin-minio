@@ -57,7 +57,7 @@ import io.kestra.core.models.annotations.PluginProperty;
                   - id: upload_to_storage
                     type: io.kestra.plugin.minio.Upload
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     region: "eu-central-1"
                     from: "{{ inputs.file }}"
                     bucket: "my-bucket"
@@ -79,7 +79,7 @@ import io.kestra.core.models.annotations.PluginProperty;
                   - id: upload_to_storage
                     type: io.kestra.plugin.minio.Upload
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     endpoint: https://<region>.digitaloceanspaces.com
                     bucket: "kestra-test-bucket"
                     from: "{{ outputs.http_download.uri }}"
@@ -103,19 +103,20 @@ import io.kestra.core.models.annotations.PluginProperty;
     }
 )
 @Schema(
-    title = "Upload a file to a MinIO bucket."
+    title = "Upload a file to a MinIO bucket",
+    description = "Uploads a file to a MinIO bucket from Kestra's internal storage."
 )
 public class Upload extends AbstractMinioObject implements RunnableTask<Upload.Output>, Data.From {
 
     @Schema(
-        title = "The key where to upload the file.",
+        title = "The key where to upload the file",
         description = "a full key (with filename) or the directory path if from is multiple files."
     )
     @PluginProperty(group = "connection")
     private Property<String> key;
 
     @Schema(
-        title = "The file(s) to upload.",
+        title = "The file(s) to upload",
         description = "Can be a single file, a list of files or json array.",
         anyOf = { List.class, String.class, Map.class }
     )
@@ -124,13 +125,13 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     private Object from;
 
     @Schema(
-        title = "A standard MIME type describing the format of the contents."
+        title = "A standard MIME type describing the format of the contents"
     )
     @PluginProperty(group = "advanced")
     private Property<String> contentType;
 
     @Schema(
-        title = "A map of metadata to store with the object."
+        title = "A map of metadata to store with the object"
     )
     @PluginProperty(group = "advanced")
     private Property<Map<String, String>> metadata;
@@ -281,7 +282,9 @@ public class Upload extends AbstractMinioObject implements RunnableTask<Upload.O
     @SuperBuilder
     @Getter
     public static class Output extends ObjectOutput implements io.kestra.core.models.tasks.Output {
+        @Schema(title = "The bucket name")
         private final String bucket;
+        @Schema(title = "The object key")
         private final String key;
     }
 }

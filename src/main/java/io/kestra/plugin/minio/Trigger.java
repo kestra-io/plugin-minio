@@ -34,7 +34,7 @@ import io.kestra.core.models.annotations.PluginProperty;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Trigger a flow on a new file arrival in a MinIO bucket.",
+    title = "Trigger a flow on a new file arrival in a MinIO bucket",
     description = "This trigger will list every `interval` a bucket. " +
         "You can search for all files in a bucket or directory in `from` or you can filter the files with a `regExp`. " +
         "The detection is atomic, internally we do a list and interact only with files listed.\n" +
@@ -152,24 +152,33 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
 
     protected Property<String> endpoint;
 
+    @Schema(title = "The bucket name")
     protected Property<String> bucket;
 
+    @Schema(title = "Limits the response to keys that begin with the specified prefix")
     private Property<String> prefix;
 
+    @Schema(title = "A delimiter is a character you use to group keys")
     private Property<String> delimiter;
 
+    @Schema(title = "Marker to start listing from a specific key")
     private Property<String> marker;
 
+    @Schema(title = "Maximum number of keys to return per request")
     @Builder.Default
     private Property<Integer> maxKeys = Property.ofValue(1000);
 
+    @Schema(title = "Regular expression to filter object keys")
     protected Property<String> regexp;
 
+    @Schema(title = "Filter to apply on listed objects (files, directories, or both)")
     @Builder.Default
     protected final Property<List.Filter> filter = Property.ofValue(List.Filter.BOTH);
 
+    @Schema(title = "Action to apply to listed objects after detection")
     private Property<Downloads.Action> action;
 
+    @Schema(title = "The destination bucket and key for the `MOVE` action")
     private Copy.CopyObject moveTo;
 
     @Builder.Default
@@ -312,7 +321,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     @Builder
     @Getter
     public static class Output implements io.kestra.core.models.tasks.Output {
-        @Schema(title = "List of blobs that triggered the flow, each with its change type.")
+        @Schema(title = "List of blobs that triggered the flow, each with its change type")
         private final java.util.List<TriggeredBlob> objects;
     }
 

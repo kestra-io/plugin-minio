@@ -42,7 +42,7 @@ import io.kestra.core.models.annotations.PluginProperty;
                   - id: list_objects
                     type: io.kestra.plugin.minio.List
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     region: "eu-central-1"
                     bucket: "my-bucket"
                     prefix: "sub-dir"
@@ -59,7 +59,7 @@ import io.kestra.core.models.annotations.PluginProperty;
                   - id: list_objects
                     type: io.kestra.plugin.minio.List
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     endpoint: https://<region>.digitaloceanspaces.com
                     bucket: "kestra-test-bucket"
                 """
@@ -75,7 +75,8 @@ import io.kestra.core.models.annotations.PluginProperty;
     }
 )
 @Schema(
-    title = "List objects on a MinIO bucket."
+    title = "List objects on a MinIO bucket",
+    description = "Lists objects in a MinIO bucket, optionally filtered by prefix, delimiter, or regular expression."
 )
 public class List extends AbstractMinioObject implements RunnableTask<List.Output> {
 
@@ -86,32 +87,32 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
     }
 
     @Schema(
-        title = "Limits the response to keys that begin with the specified prefix."
+        title = "Limits the response to keys that begin with the specified prefix"
     )
     @PluginProperty(group = "source")
     private Property<String> prefix;
 
     @Schema(
-        title = "Limits the response to keys that ends with the specified string."
+        title = "Limits the response to keys that ends with the specified string"
     )
     @PluginProperty(group = "advanced")
     private Property<String> startAfter;
 
     @Schema(
-        title = "A delimiter is a character you use to group keys."
+        title = "A delimiter is a character you use to group keys"
     )
     @PluginProperty(group = "processing")
     private Property<String> delimiter;
 
     @Schema(
-        title = "Marker is where you want to start listing from.",
+        title = "Marker is where you want to start listing from",
         description = "Start listing after this specified key. Marker can be any key in the bucket."
     )
     @PluginProperty(group = "source")
     private Property<String> marker;
 
     @Schema(
-        title = "Sets the maximum number of keys returned in the response.",
+        title = "Sets the maximum number of keys returned in the response",
         description = "By default, the action returns up to 1,000 key names. The response might contain fewer keys but will never contain more."
     )
     @Builder.Default
@@ -119,7 +120,7 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
     private Property<Integer> maxKeys = Property.ofValue(1000);
 
     @Schema(
-        title = "A regexp to filter on full key.",
+        title = "A regexp to filter on full key",
         description = "ex:\n" +
             "`regExp: .*` to match all files\n" +
             "`regExp: .*2020-01-0.\\\\.csv` to match files between 01 and 09 of january ending with `.csv`"
@@ -128,21 +129,21 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
     protected Property<String> regexp;
 
     @Schema(
-        title = "The type of objects to filter: files, directory, or both."
+        title = "The type of objects to filter: files, directory, or both"
     )
     @Builder.Default
     @PluginProperty(group = "processing")
     protected final Property<Filter> filter = Property.ofValue(Filter.BOTH);
 
     @Schema(
-        title = "Indicates whether it should look into subfolders."
+        title = "Indicates whether it should look into subfolders"
     )
     @Builder.Default
     @PluginProperty(group = "advanced")
     public Property<Boolean> recursive = Property.ofValue(true);
 
     @Schema(
-        title = "Indicates whether task should include versions in output."
+        title = "Indicates whether task should include versions in output"
     )
     @Builder.Default
     @PluginProperty(group = "advanced")
@@ -207,7 +208,7 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
     public static class Output implements io.kestra.core.models.tasks.Output {
         @JsonInclude
         @Schema(
-            title = "The list of objects."
+            title = "The list of objects"
         )
         private final java.util.List<MinioObject> objects;
     }

@@ -38,7 +38,7 @@ import io.kestra.core.models.annotations.PluginProperty;
                   - id: download_from_storage
                     type: io.kestra.plugin.minio.Download
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     region: "eu-central-1"
                     bucket: "my-bucket"
                     key: "path/to/file"
@@ -55,7 +55,7 @@ import io.kestra.core.models.annotations.PluginProperty;
                   - id: download_from_storage
                     type: io.kestra.plugin.minio.Download
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     endpoint: https://<region>.digitaloceanspaces.com
                     bucket: "kestra-test-bucket"
                     key: "data/orders.csv"
@@ -72,18 +72,19 @@ import io.kestra.core.models.annotations.PluginProperty;
     }
 )
 @Schema(
-    title = "Download a file from a MinIO bucket."
+    title = "Download a file from a MinIO bucket",
+    description = "Downloads a single object from a MinIO bucket to Kestra's internal storage."
 )
 public class Download extends AbstractMinioObject implements RunnableTask<Download.Output> {
 
     @Schema(
-        title = "The key of a file to download."
+        title = "The key of a file to download"
     )
     @PluginProperty(group = "connection")
     private Property<String> key;
 
     @Schema(
-        title = "The specific version of the object."
+        title = "The specific version of the object"
     )
     @PluginProperty(group = "advanced")
     protected Property<String> versionId;
@@ -112,10 +113,11 @@ public class Download extends AbstractMinioObject implements RunnableTask<Downlo
     @SuperBuilder
     @Getter
     public static class Output implements io.kestra.core.models.tasks.Output {
+        @Schema(title = "The URI of the downloaded file on Kestra's internal storage")
         private final URI uri;
 
         @Schema(
-            title = "The size of the body in bytes."
+            title = "The size of the body in bytes"
         )
         private final Long contentLength;
     }

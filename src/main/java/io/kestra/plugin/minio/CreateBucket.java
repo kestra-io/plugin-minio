@@ -33,7 +33,7 @@ import io.kestra.core.models.annotations.PluginProperty;
                   - id: create_bucket
                     type: io.kestra.plugin.minio.CreateBucket
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     region: "eu-central-1"
                     bucket: "my-bucket"
                 """
@@ -49,7 +49,7 @@ import io.kestra.core.models.annotations.PluginProperty;
                   - id: create_bucket
                     type: io.kestra.plugin.minio.CreateBucket
                     accessKeyId: "<access_key>"
-                    secretKeyId: "<secret_key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     endpoint: https://<region>.digitaloceanspaces.com  #example region: nyc3, tor1
                     bucket: "kestra-test-bucket"
                 """
@@ -57,12 +57,13 @@ import io.kestra.core.models.annotations.PluginProperty;
     }
 )
 @Schema(
-    title = "Create a MinIO bucket."
+    title = "Create a MinIO bucket",
+    description = "Creates a new bucket in MinIO S3-compatible storage."
 )
 public class CreateBucket extends AbstractMinioObject implements RunnableTask<CreateBucket.Output> {
 
     @Schema(
-        title = "Specifies whether you want Object Lock to be enabled for the new bucket."
+        title = "Specifies whether you want Object Lock to be enabled for the new bucket"
     )
     @PluginProperty(group = "connection")
     private Property<Boolean> objectLockEnabledForBucket;
@@ -103,6 +104,7 @@ public class CreateBucket extends AbstractMinioObject implements RunnableTask<Cr
     @Builder
     @Getter
     public static class Output implements io.kestra.core.models.tasks.Output {
+        @Schema(title = "The bucket name")
         private final String bucket;
     }
 

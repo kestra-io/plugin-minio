@@ -33,7 +33,7 @@ import lombok.experimental.SuperBuilder;
                   - id: copy
                     type: io.kestra.plugin.minio.Copy
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     region: "eu-central-1"
                     from:
                       bucket: "my-bucket"
@@ -54,7 +54,7 @@ import lombok.experimental.SuperBuilder;
                   - id: copy_file
                     type: io.kestra.plugin.minio.Copy
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     endpoint: https://<region>.digitaloceanspaces.com
                     from:
                       bucket: "my-bucket"
@@ -67,24 +67,25 @@ import lombok.experimental.SuperBuilder;
     }
 )
 @Schema(
-    title = "Copy a file between MinIO buckets."
+    title = "Copy a file between MinIO buckets",
+    description = "Copies an object from one MinIO bucket and key to another, optionally deleting the source afterwards."
 )
 public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Output> {
 
     @Schema(
-        title = "The source bucket and key."
+        title = "The source bucket and key"
     )
     @PluginProperty(group = "source")
     private CopyObjectFrom from;
 
     @Schema(
-        title = "The destination bucket and key."
+        title = "The destination bucket and key"
     )
     @PluginProperty(group = "destination")
     private CopyObject to;
 
     @Schema(
-        title = "Whether to delete the source file after download."
+        title = "Whether to delete the source file after download"
     )
     @Builder.Default
     @PluginProperty(group = "advanced")
@@ -153,7 +154,7 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
     @NoArgsConstructor
     public static class CopyObjectFrom extends CopyObject {
         @Schema(
-            title = "The specific version of the object."
+            title = "The specific version of the object"
         )
         private Property<String> versionId;
     }
@@ -162,7 +163,9 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
     @Getter
     @NoArgsConstructor
     public static class Output extends ObjectOutput implements io.kestra.core.models.tasks.Output {
+        @Schema(title = "The bucket name")
         private String bucket;
+        @Schema(title = "The object key")
         private String key;
     }
 
