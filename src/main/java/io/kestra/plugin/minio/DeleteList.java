@@ -45,7 +45,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                   - id: delete_objects
                     type: io.kestra.plugin.minio.DeleteList
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     region: "eu-central-1"
                     bucket: "my-bucket"
                     prefix: "sub-dir"
@@ -62,7 +62,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                   - id: delete_objects
                     type: io.kestra.plugin.minio.DeleteList
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     endpoint: https://<region>.digitaloceanspaces.com
                     bucket: "kestra-test-bucket"
                     prefix: "sub-dir"
@@ -85,31 +85,32 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
     }
 )
 @Schema(
-    title = "Delete a list of keys on a MinIO bucket."
+    title = "Delete a list of keys on a MinIO bucket",
+    description = "Deletes multiple objects matching a prefix or pattern from a MinIO bucket in a single operation."
 )
 public class DeleteList extends AbstractMinioObject implements RunnableTask<DeleteList.Output> {
 
     @Schema(
-        title = "Limits the response to keys that begin with the specified prefix."
+        title = "Limits the response to keys that begin with the specified prefix"
     )
     @PluginProperty(group = "source")
     private Property<String> prefix;
 
     @Schema(
-        title = "A delimiter is a character you use to group keys."
+        title = "A delimiter is a character you use to group keys"
     )
     @PluginProperty(group = "processing")
     private Property<String> delimiter;
 
     @Schema(
-        title = "Marker is where you want to start listing from.",
+        title = "Marker is where you want to start listing from",
         description = "Start listing after this specified key. Marker can be any key in the bucket."
     )
     @PluginProperty(group = "source")
     private Property<String> marker;
 
     @Schema(
-        title = "Sets the maximum number of keys returned in the response.",
+        title = "Sets the maximum number of keys returned in the response",
         description = "By default, the action returns up to 1,000 key names. The response might contain fewer keys but will never contain more."
     )
     @Builder.Default
@@ -117,7 +118,7 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
     private Property<Integer> maxKeys = Property.ofValue(1000);
 
     @Schema(
-        title = "A regexp to filter on full key.",
+        title = "A regexp to filter on full key",
         description = "ex:\n" +
             "`regExp: .*` to match all files\n" +
             "`regExp: .*2020-01-0.\\\\.csv` to match files between 01 and 09 of january ending with `.csv`"
@@ -126,7 +127,7 @@ public class DeleteList extends AbstractMinioObject implements RunnableTask<Dele
     protected Property<String> regexp;
 
     @Schema(
-        title = "The type of objects to filter: files, directory, or both."
+        title = "The type of objects to filter: files, directory, or both"
     )
     @Builder.Default
     protected final Property<List.Filter> filter = Property.ofValue(List.Filter.BOTH);

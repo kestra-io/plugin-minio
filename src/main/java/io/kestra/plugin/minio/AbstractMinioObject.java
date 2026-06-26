@@ -18,7 +18,7 @@ import io.kestra.core.models.annotations.PluginProperty;
 public abstract class AbstractMinioObject extends MinioConnection implements AbstractMinio {
 
     @Schema(
-        title = "The bucket name."
+        title = "The bucket name"
     )
     @PluginProperty(group = "connection")
     protected Property<String> bucket;

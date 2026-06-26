@@ -11,25 +11,25 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public interface MinioConnectionInterface {
 
     @Schema(
-        title = "URL to the MinIO endpoint."
+        title = "URL to the MinIO endpoint"
     )
     @PluginProperty(group = "connection")
     Property<String> getEndpoint();
 
     @Schema(
-        title = "Access Key Id for authentication."
+        title = "Access Key Id for authentication"
     )
     @PluginProperty(secret = true, group = "advanced")
     Property<String> getAccessKeyId();
 
     @Schema(
-        title = "Secret Key Id for authentication."
+        title = "Secret Key Id for authentication"
     )
     @PluginProperty(secret = true, group = "advanced")
     Property<String> getSecretKeyId();
 
     @Schema(
-        title = "MinIO region with which the SDK should communicate."
+        title = "MinIO region with which the SDK should communicate"
     )
     @PluginProperty(group = "connection")
     Property<String> getRegion();
