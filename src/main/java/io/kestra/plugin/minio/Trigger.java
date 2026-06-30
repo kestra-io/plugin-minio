@@ -144,8 +144,10 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     @Builder.Default
     private final Duration interval = Duration.ofSeconds(60);
 
+    @ToString.Exclude
     protected Property<String> accessKeyId;
 
+    @ToString.Exclude
     protected Property<String> secretKeyId;
 
     protected Property<String> region;

@@ -38,7 +38,7 @@ public interface MinioConnectionInterface {
         title = "Client PEM certificate content",
         description = "PEM client certificate as text, used to authenticate the connection to MinIO (mTLS)."
     )
-    @PluginProperty(group = "advanced")
+    @PluginProperty(secret = true, group = "advanced")
     Property<String> getClientPem();
 
     @Schema(

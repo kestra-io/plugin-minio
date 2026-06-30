@@ -20,7 +20,9 @@ public abstract class MinioConnection extends Task implements MinioConnectionInt
 
     protected Property<String> region;
 
+    @ToString.Exclude
     protected Property<String> accessKeyId;
+    @ToString.Exclude
     protected Property<String> secretKeyId;
 
     protected Property<String> endpoint;
