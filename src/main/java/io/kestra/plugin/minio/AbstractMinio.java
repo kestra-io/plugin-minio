@@ -75,6 +75,12 @@ public interface AbstractMinio extends MinioConnectionInterface {
 
     private static OkHttpClient buildHttpClient(MinioConnection.MinioClientConfig config, RunContext runContext) throws Exception {
         if (config.sslOptions() != null && runContext.render(config.sslOptions().getInsecureTrustAllCertificates()).as(Boolean.class).orElse(false)) {
+            runContext.logger().warn(
+                "MinIO client is configured with 'ssl.insecureTrustAllCertificates=true': TLS certificate validation " +
+                    "and hostname verification are disabled. This makes the connection vulnerable to man-in-the-middle " +
+                    "attacks and should only be used for local development or testing against trusted networks."
+            );
+
             SSLContext sslContext = SSLContexts.custom()
                 .loadTrustMaterial(null, (chain, authType) -> true)
                 .build();
