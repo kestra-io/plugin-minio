@@ -43,7 +43,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                   - id: downloads
                     type: io.kestra.plugin.minio.Downloads
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     region: "eu-central-1"
                     bucket: "my-bucket"
                     prefix: "sub-dir"
@@ -61,7 +61,7 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                   - id: downloads
                     type: io.kestra.plugin.minio.Downloads
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     endpoint: https://<region>.digitaloceanspaces.com
                     bucket: "kestra-test-bucket"
                     prefix: "data/orders"
@@ -79,7 +79,8 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
     }
 )
 @Schema(
-    title = "Downloads multiple files from a MinIO bucket."
+    title = "Downloads multiple files from a MinIO bucket",
+    description = "Downloads multiple objects matching a prefix or pattern from a MinIO bucket to Kestra's internal storage."
 )
 public class Downloads extends AbstractMinioObject implements RunnableTask<Downloads.Output> {
 
@@ -90,26 +91,26 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
     }
 
     @Schema(
-        title = "Limits the response to keys that begin with the specified prefix."
+        title = "Limits the response to keys that begin with the specified prefix"
     )
     @PluginProperty(group = "source")
     private Property<String> prefix;
 
     @Schema(
-        title = "A delimiter is a character you use to group keys."
+        title = "A delimiter is a character you use to group keys"
     )
     @PluginProperty(group = "processing")
     private Property<String> delimiter;
 
     @Schema(
-        title = "Marker is where you want to start listing from.",
+        title = "Marker is where you want to start listing from",
         description = "Start listing after this specified key. Marker can be any key in the bucket."
     )
     @PluginProperty(group = "source")
     private Property<String> marker;
 
     @Schema(
-        title = "Sets the maximum number of keys returned in the response.",
+        title = "Sets the maximum number of keys returned in the response",
         description = "By default, the action returns up to 1,000 key names. The response might contain fewer keys but will never contain more."
     )
     @Builder.Default
@@ -117,7 +118,7 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
     private Property<Integer> maxKeys = Property.ofValue(1000);
 
     @Schema(
-        title = "A regexp to filter on full key.",
+        title = "A regexp to filter on full key",
         description = "ex:\n" +
             "`regExp: .*` to match all files\n" +
             "`regExp: .*2020-01-0.\\\\.csv` to match files between 01 and 09 of january ending with `.csv`"
@@ -126,22 +127,22 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
     protected Property<String> regexp;
 
     @Schema(
-        title = "The type of objects to filter: files, directory, or both."
+        title = "The type of objects to filter: files, directory, or both"
     )
     @Builder.Default
     protected final Property<io.kestra.plugin.minio.List.Filter> filter = Property.ofValue(io.kestra.plugin.minio.List.Filter.BOTH);
 
     @Schema(
-        title = "The action to perform on the retrieved files. If using 'NONE' make sure to handle the files inside your flow to avoid infinite triggering."
+        title = "The action to perform on the retrieved files. If using 'NONE' make sure to handle the files inside your flow to avoid infinite triggering"
     )
     @NotNull
     @PluginProperty(group = "main")
     private Property<Action> action;
 
     @Schema(
-        title = "The destination bucket and key for `MOVE` action."
+        title = "The destination bucket and key for `MOVE` action"
     )
-    @PluginProperty(dynamic = true)
+    @PluginProperty(dynamic = true, group = "destination")
     private Copy.CopyObject moveTo;
 
     @Override
@@ -209,12 +210,12 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
     public static class Output implements io.kestra.core.models.tasks.Output {
         @JsonInclude
         @Schema(
-            title = "The list of objects."
+            title = "The list of objects"
         )
         private final java.util.List<MinioObject> objects;
 
         @Schema(
-            title = "The downloaded files as a map of from/to URIs."
+            title = "The downloaded files as a map of from/to URIs"
         )
         private final Map<String, URI> outputFiles;
     }

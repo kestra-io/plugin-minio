@@ -30,7 +30,7 @@ import lombok.experimental.SuperBuilder;
                   - id: delete
                     type: io.kestra.plugin.minio.Delete
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     region: "eu-central-1"
                     bucket: "my-bucket"
                     key: "path/to/file"
@@ -47,7 +47,7 @@ import lombok.experimental.SuperBuilder;
                   - id: delete
                     type: io.kestra.plugin.minio.Delete
                     accessKeyId: "<access-key>"
-                    secretKeyId: "<secret-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     endpoint: https://<region>.digitaloceanspaces.com
                     bucket: "kestra-test-bucket"
                     key: "path/to/file"
@@ -56,18 +56,19 @@ import lombok.experimental.SuperBuilder;
     }
 )
 @Schema(
-    title = "Delete a file from a MinIO bucket."
+    title = "Delete a file from a MinIO bucket",
+    description = "Deletes a single object from a MinIO bucket by key."
 )
 public class Delete extends AbstractMinioObject implements RunnableTask<Delete.Output> {
 
     @Schema(
-        title = "The key to delete."
+        title = "The key to delete"
     )
     @PluginProperty(group = "connection")
     private Property<String> key;
 
     @Schema(
-        title = "Indicates whether Object Lock should bypass Governance-mode restrictions to process this operation."
+        title = "Indicates whether Object Lock should bypass Governance-mode restrictions to process this operation"
     )
     @PluginProperty(group = "advanced")
     private Property<Boolean> bypassGovernanceRetention;
@@ -101,7 +102,9 @@ public class Delete extends AbstractMinioObject implements RunnableTask<Delete.O
     @Builder
     @Getter
     public static class Output implements io.kestra.core.models.tasks.Output {
+        @Schema(title = "The bucket name")
         private String bucket;
+        @Schema(title = "The object key")
         private String key;
     }
 
