@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.executions.Execution;
+import io.kestra.core.runners.TestRunnerUtils;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.triggers.StatefulTriggerInterface;
 import io.kestra.core.queues.DispatchQueueInterface;
@@ -25,7 +26,9 @@ import io.kestra.plugin.minio.model.MinioObject;
 import jakarta.inject.Inject;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.is;
+import static io.kestra.core.tenant.TenantService.MAIN_TENANT;
 
 @KestraTest(startRunner = true, startScheduler = true)
 public class TriggerTest extends AbstractMinIoTest {
@@ -36,21 +39,14 @@ public class TriggerTest extends AbstractMinIoTest {
     @Inject
     protected LocalFlowRepositoryLoader repositoryLoader;
 
+    @Inject
+    protected TestRunnerUtils runnerUtils;
+
     @Test
     void deleteAction() throws Exception {
         String bucket = "trigger-test";
         this.createBucket(bucket);
         List listTask = list().bucket(Property.ofValue(bucket)).build();
-
-        CountDownLatch queueCount = new CountDownLatch(1);
-        AtomicReference<Execution> last = new AtomicReference<>();
-
-        executionQueue.addListener(execution -> {
-            if (execution.getFlowId().equals("listen")) {
-                last.set(execution);
-                queueCount.countDown();
-            }
-        });
 
         upload("trigger/", bucket);
         upload("trigger/", bucket);
@@ -70,11 +66,11 @@ public class TriggerTest extends AbstractMinIoTest {
 
         repositoryLoader.load(flowPath.toUri().toURL());
 
-        boolean await = queueCount.await(1, TimeUnit.MINUTES);
-        assertThat(await, is(true));
+        Execution last = runnerUtils.awaitFlowExecution(e -> true, MAIN_TENANT, "io.kestra.tests", "listen", Duration.ofMinutes(1));
+        assertThat(last, notNullValue());
 
         @SuppressWarnings("unchecked")
-        java.util.List<MinioObject> trigger = (java.util.List<MinioObject>) last.get().getTrigger().getVariables().get("objects");
+        java.util.List<MinioObject> trigger = (java.util.List<MinioObject>) last.getTrigger().getVariables().get("objects");
 
         assertThat(trigger.size(), is(2));
 
