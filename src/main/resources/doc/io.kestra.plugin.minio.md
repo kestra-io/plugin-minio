@@ -4,7 +4,7 @@ Upload, download, list, copy, and delete objects in MinIO (or any S3-compatible 
 
 ## Authentication
 
-Set `endpoint` to your MinIO server URL, `accessKeyId` to your access key, and `secretKeyId` to your secret key. Optionally set `region`. For TLS mutual auth, pass PEM content via `clientPem` and `caPem`. Store secrets in [secrets](https://kestra.io/docs/concepts/secret) and apply connection properties globally with [plugin defaults](https://kestra.io/docs/workflow-components/plugin-defaults).
+Set `endpoint` to your MinIO server URL, `accessKeyId` to your access key, and `secretKeyId` to your secret key. Optionally set `region`. For TLS mutual auth, pass PEM content via `clientPem` and `caPem`. Store secrets in [secrets](https://kestra.io/docs/concepts/secret) and set connection properties on each task.
 
 ## Tasks
 
