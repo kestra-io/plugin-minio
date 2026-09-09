@@ -113,7 +113,7 @@ dependencies {
     testImplementation "org.testcontainers:minio:1.21.4"
 
     // sanity checks
-    testImplementation "io.kestra.plugin:plugin-docker:1.6.0"
+    testImplementation "io.kestra.plugin:plugin-docker:1.6.1"
 }
 
 /**********************************************************************************************************************\
