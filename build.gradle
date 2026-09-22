@@ -108,8 +108,8 @@ dependencies {
 
     // testcontainers
     testImplementation "org.testcontainers:testcontainers:2.0.5"
-    testImplementation "org.testcontainers:junit-jupiter:1.21.4"
-    testImplementation "org.testcontainers:minio:1.21.4"
+    testImplementation "org.testcontainers:testcontainers-junit-jupiter:2.0.5"
+    testImplementation "org.testcontainers:testcontainers-minio:2.0.5"
 
     // sanity checks
     testImplementation "io.kestra.plugin:plugin-docker:1.6.1"
