@@ -4,14 +4,18 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
 import io.kestra.core.http.client.configurations.SslOptions;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
+import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.conditions.ConditionContext;
 import io.kestra.core.models.executions.Execution;
 import io.kestra.core.models.property.Property;
@@ -26,7 +30,6 @@ import lombok.experimental.SuperBuilder;
 
 import static io.kestra.core.models.triggers.StatefulTriggerService.*;
 import static io.kestra.core.utils.Rethrow.throwFunction;
-import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -206,9 +209,31 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
 
     protected SslOptions ssl;
 
+    // A fresh List per evaluate(), so kill() needs a reference rather than a field: a killed cycle must not poison later ones.
+    @Getter(AccessLevel.NONE)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private final transient AtomicReference<List> activeListTask = new AtomicReference<>();
+
+    // Catches a kill landing between one cycle clearing activeListTask and the next publishing its List. Never reset.
+    @Getter(AccessLevel.NONE)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private final transient AtomicBoolean killed = new AtomicBoolean(false);
+
     @Override
     public Optional<Execution> evaluate(ConditionContext conditionContext, TriggerContext context) throws Exception {
         RunContext runContext = conditionContext.getRunContext();
+
+        if (this.killed.get()) {
+            runContext.logger().debug(
+                "MinIO trigger id={} received kill() before this evaluation cycle started; skipping poll",
+                this.id
+            );
+            return Optional.empty();
+        }
 
         var rOn = runContext.render(on).as(On.class).orElse(On.CREATE_OR_UPDATE);
         var rStateKey = runContext.render(stateKey).as(String.class).orElse(StatefulTriggerService.defaultKey(context.getNamespace(), context.getFlowId(), id));
@@ -232,7 +257,27 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
             .clientPem(this.clientPem)
             .ssl(this.ssl)
             .build();
-        List.Output run = task.run(runContext);
+
+        this.activeListTask.set(task);
+        // Re-check right after publishing: closes the gap between building the task and the set() above, where
+        // a kill() landing in between finds the previous cycle's (null) reference and is otherwise
+        // silently dropped, letting the freshly built list run to its full timeout.
+        if (this.killed.get()) {
+            this.activeListTask.compareAndSet(task, null);
+            return Optional.empty();
+        }
+
+        List.Output run;
+        try {
+            run = task.run(runContext);
+        } finally {
+            this.activeListTask.compareAndSet(task, null);
+        }
+
+        // A killed evaluation must not reach the side-effect phase.
+        if (this.killed.get()) {
+            return Optional.empty();
+        }
 
         if (run.getObjects().isEmpty()) {
             return Optional.empty();
@@ -255,6 +300,11 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
 
                 if (stateChange.fire()) {
                     var changeType = stateChange.isNew() ? ChangeType.CREATE : ChangeType.UPDATE;
+
+                    // The pre-writeState check below then discards the partially computed state.
+                    if (this.killed.get()) {
+                        return Stream.empty();
+                    }
 
                     var download = Download.builder()
                         .id(this.id)
@@ -284,6 +334,12 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
             }))
             .collect(Collectors.toList());
 
+        // Last point a kill can be honoured: once state is written, objects would be recorded as seen without
+        // ever firing, so there is deliberately no check between writeState and performAction.
+        if (this.killed.get()) {
+            return Optional.empty();
+        }
+
         writeState(runContext, rStateKey, previousState, rStateTtl);
 
         if (toFire.isEmpty()) {
@@ -299,6 +355,22 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
         Execution execution = TriggerService.generateExecution(this, conditionContext, context, output);
 
         return Optional.of(execution);
+    }
+
+    /**
+     * Aborts the in-flight listing, if any, and prevents the evaluation from reaching its side effects.
+     *
+     * <p>
+     * Nothing is lost: trigger state is only written once every download has completed, so a killed poll
+     * simply does not fire and its objects are picked up again by the next evaluation.
+     *
+     * <p>
+     * {@code stop()} is deliberately not overridden: a graceful stop lets the evaluation drain instead of failing it.
+     **/
+    @Override
+    public void kill() {
+        this.killed.set(true);
+        Optional.ofNullable(this.activeListTask.get()).ifPresent(List::kill);
     }
 
     private Rethrow.FunctionChecked<MinioObject, MinioObject, Exception> getMinioObject(RunContext runContext) {

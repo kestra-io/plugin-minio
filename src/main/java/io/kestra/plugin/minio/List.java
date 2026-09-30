@@ -1,13 +1,19 @@
 package io.kestra.plugin.minio;
 
+import java.io.InterruptedIOException;
+import java.util.Optional;
 import java.util.Spliterator;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.StreamSupport;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Metric;
 import io.kestra.core.models.annotations.Plugin;
+import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
@@ -23,7 +29,6 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import static io.kestra.core.utils.Rethrow.throwFunction;
-import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -149,11 +154,39 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
     @PluginProperty(group = "advanced")
     public Property<Boolean> includeVersions = Property.ofValue(true);
 
+    // Published for as long as run() is executing so that kill() can abort the in-flight request. A fresh
+    // client is built per run(), each with its own dispatcher, so a reference left behind by an earlier run
+    // can never abort a later one; it is cleared on the way out regardless.
+    @Getter(AccessLevel.NONE)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private final transient AtomicReference<CancellableClient> activeClient = new AtomicReference<>();
+
+    // Sticky flag covering the window between building the client and publishing it above, where a kill()
+    // finds nothing to cancel and would be silently dropped — cancelAll() only affects requests already
+    // queued, so a request issued afterwards would run its full timeout. Never reset: a killed task must
+    // not go on to issue requests.
+    @Getter(AccessLevel.NONE)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private final transient AtomicBoolean killed = new AtomicBoolean(false);
+
     @Override
     public Output run(RunContext runContext) throws Exception {
         String bucket = runContext.render(this.bucket).as(String.class).orElse(null);
 
-        try (MinioClient client = this.client(runContext)) {
+        try (CancellableClient cancellableClient = this.cancellableClient(runContext)) {
+            MinioClient client = cancellableClient.client();
+            this.activeClient.set(cancellableClient);
+
+            // Re-check after publishing, so a kill() that arrived while the client was being built aborts the
+            // operation before the first request goes out rather than being lost.
+            if (this.killed.get()) {
+                throw new InterruptedIOException("MinIO list task was killed before the request was issued");
+            }
+
             ListObjectsArgs.Builder requestBuilder = ListObjectsArgs
                 .builder()
                 .bucket(bucket)
@@ -193,7 +226,20 @@ public class List extends AbstractMinioObject implements RunnableTask<List.Outpu
                 .builder()
                 .objects(minioObjects)
                 .build();
+        } finally {
+            // Runs after the client is closed, on both the normal and the cancelled path, so a kill() arriving
+            // later never reaches a client whose operation has already finished.
+            this.activeClient.set(null);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     **/
+    @Override
+    public void kill() {
+        this.killed.set(true);
+        Optional.ofNullable(this.activeClient.get()).ifPresent(CancellableClient::cancelInFlightRequests);
     }
 
     private boolean filter(Item object, String regExp, Filter filter) {
