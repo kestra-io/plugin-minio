@@ -99,9 +99,8 @@ class TriggerKillTest {
                     {
                         trigger.kill();
                         trigger.kill();
-                        trigger.stop();
                     },
-                    "repeated kill()/stop() on a live evaluation must not throw"
+                    "repeated kill() on a live evaluation must not throw"
                 );
 
                 evaluation.awaitFailure();
