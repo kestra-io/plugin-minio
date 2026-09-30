@@ -47,7 +47,31 @@ public interface AbstractMinio extends MinioConnectionInterface {
     }
 
     default MinioClient client(final RunContext runContext) throws Exception {
-        return cancellableClient(runContext).client();
+        MinioConnection.MinioClientConfig minioClientConfig = minioClientConfig(runContext);
+
+        MinioClient.Builder clientBuilder = MinioClient.builder();
+
+        if (
+            StringUtils.isNotEmpty(minioClientConfig.accessKeyId()) &&
+                StringUtils.isNotEmpty(minioClientConfig.secretKeyId())
+        ) {
+            clientBuilder.credentials(minioClientConfig.accessKeyId(), minioClientConfig.secretKeyId());
+        }
+
+        if (StringUtils.isNotEmpty(minioClientConfig.endpoint())) {
+            clientBuilder.endpoint(minioClientConfig.endpoint());
+        }
+
+        if (StringUtils.isNotEmpty(minioClientConfig.region())) {
+            clientBuilder.region(minioClientConfig.region());
+        }
+
+        OkHttpClient httpClient = buildHttpClient(minioClientConfig, runContext);
+        if (httpClient != null) {
+            clientBuilder.httpClient(httpClient);
+        }
+
+        return clientBuilder.build();
     }
 
     /**
@@ -83,10 +107,9 @@ public interface AbstractMinio extends MinioConnectionInterface {
         // SSL_CERT_FILE/SSL_CERT_DIR handling identical to what the SDK would have built for itself.
         OkHttpClient httpClient = customHttpClient != null ? customHttpClient : Http.newDefaultClient();
 
-        // Ownership must mirror the SDK's own rule, since MinioClient.close() only tears down an HTTP client
-        // the SDK created: a client we defaulted in is closed as before, and a user-configured one is left
-        // alone exactly as it is today.
-        clientBuilder.httpClient(httpClient, customHttpClient == null);
+        // Every path above builds a fresh HTTP client that nothing else references, so this client owns it and
+        // MinioClient.close() must release its dispatcher threads and pooled connections.
+        clientBuilder.httpClient(httpClient, true);
 
         return new CancellableClient(clientBuilder.build(), httpClient);
     }

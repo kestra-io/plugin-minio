@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -17,6 +18,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -208,6 +211,70 @@ class TriggerKillTest {
         }
     }
 
+    @Test
+    void shouldSkipRemainingDownloadsWhenKilledDuringADownload() throws Exception {
+        try (StubS3Endpoint endpoint = StubS3Endpoint.serving("a.txt", "b.txt")) {
+            Trigger trigger = trigger(endpoint, Downloads.Action.DELETE);
+            var context = TestsUtils.mockTrigger(runContextFactory, trigger);
+
+            // Downloads use their own client, so this kill only raises the flag: the first download completes
+            // normally and the kill must be honoured before the next object is fetched.
+            endpoint.onObjectRead(trigger::kill);
+
+            assertThat(
+                "a trigger killed mid-cycle must not produce an execution",
+                trigger.evaluate(context.getKey(), context.getValue()).isPresent(),
+                is(false)
+            );
+            assertThat(
+                "the second object was fetched although the trigger had already been killed",
+                endpoint.objectRequests().stream().noneMatch(request -> request.endsWith(" b.txt")),
+                is(true)
+            );
+            assertThat(
+                "the DELETE action ran for a killed evaluation",
+                endpoint.objectRequests().stream().noneMatch(request -> request.startsWith("DELETE ")),
+                is(true)
+            );
+        }
+    }
+
+    @Test
+    void shouldNotRecordStateWhenKilledBeforeStateIsWritten() throws Exception {
+        try (StubS3Endpoint endpoint = StubS3Endpoint.serving("a.txt")) {
+            String stateKey = "minio-kill-state-" + IdUtils.create();
+            Trigger killed = trigger(endpoint, Downloads.Action.DELETE, stateKey);
+            // One context for every evaluation, so all three read and write the same state store.
+            var context = TestsUtils.mockTrigger(runContextFactory, killed);
+
+            // The only download completes, then the kill must stop the cycle before it writes state.
+            endpoint.onObjectRead(killed::kill);
+
+            assertThat(killed.evaluate(context.getKey(), context.getValue()).isPresent(), is(false));
+            assertThat(
+                "the DELETE action ran for a killed evaluation",
+                endpoint.objectRequests().stream().noneMatch(request -> request.startsWith("DELETE ")),
+                is(true)
+            );
+
+            endpoint.onObjectRead(() ->
+            {
+            });
+
+            // Had the killed cycle written state, the object would already count as seen and not fire again.
+            assertThat(
+                "the killed evaluation recorded the object as seen, so it will never fire",
+                trigger(endpoint, Downloads.Action.DELETE, stateKey).evaluate(context.getKey(), context.getValue()).isPresent(),
+                is(true)
+            );
+            // Control: a completed cycle does write state, which is what makes the assertion above meaningful.
+            assertThat(
+                trigger(endpoint, Downloads.Action.DELETE, stateKey).evaluate(context.getKey(), context.getValue()).isPresent(),
+                is(false)
+            );
+        }
+    }
+
     /**
      * Starts {@code evaluate()} on another thread and returns once the endpoint confirms the list request is
      * genuinely in flight, so the caller can kill a request that has actually started.
@@ -266,6 +333,18 @@ class TriggerKillTest {
     }
 
     private Trigger trigger(StubS3Endpoint endpoint) {
+        return triggerBuilder(endpoint).build();
+    }
+
+    private Trigger trigger(StubS3Endpoint endpoint, Downloads.Action action) {
+        return triggerBuilder(endpoint).action(Property.ofValue(action)).build();
+    }
+
+    private Trigger trigger(StubS3Endpoint endpoint, Downloads.Action action, String stateKey) {
+        return triggerBuilder(endpoint).action(Property.ofValue(action)).stateKey(Property.ofValue(stateKey)).build();
+    }
+
+    private Trigger.TriggerBuilder<?, ?> triggerBuilder(StubS3Endpoint endpoint) {
         return Trigger.builder()
             .id("minio-kill-" + IdUtils.create())
             .type(Trigger.class.getName())
@@ -278,8 +357,7 @@ class TriggerKillTest {
             .bucket(Property.ofValue(BUCKET))
             .on(Property.ofValue(StatefulTriggerInterface.On.CREATE))
             .action(Property.ofValue(Downloads.Action.NONE))
-            .interval(Duration.ofSeconds(60))
-            .build();
+            .interval(Duration.ofSeconds(60));
     }
 
     private List listTask(StubS3Endpoint endpoint) {
@@ -308,19 +386,34 @@ class TriggerKillTest {
     }
 
     /**
-     * A local stand-in for an S3 endpoint that either answers a listing or holds every request open forever.
+     * A local stand-in for an S3 endpoint that either holds every request open forever, or serves a listing of
+     * the given keys along with their contents and deletion.
      */
     private static final class StubS3Endpoint implements AutoCloseable {
 
-        private static final String EMPTY_LISTING = """
+        private static final String LISTING = """
             <?xml version="1.0" encoding="UTF-8"?>
             <ListVersionsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
               <Name>%s</Name>
               <Prefix></Prefix>
               <MaxKeys>1000</MaxKeys>
               <IsTruncated>false</IsTruncated>
-            </ListVersionsResult>
-            """.formatted(BUCKET);
+            %s</ListVersionsResult>
+            """;
+
+        private static final String VERSION = """
+              <Version>
+                <Key>%s</Key>
+                <VersionId>null</VersionId>
+                <IsLatest>true</IsLatest>
+                <LastModified>2026-01-01T00:00:00.000Z</LastModified>
+                <ETag>"%s"</ETag>
+                <Size>%d</Size>
+                <StorageClass>STANDARD</StorageClass>
+              </Version>
+            """;
+
+        private static final byte[] CONTENT = "content".getBytes(StandardCharsets.UTF_8);
 
         private final HttpServer server;
         private final ExecutorService executor;
@@ -329,8 +422,14 @@ class TriggerKillTest {
         private final CountDownLatch release = new CountDownLatch(1);
         private final AtomicInteger received = new AtomicInteger();
         private final AtomicInteger responded = new AtomicInteger();
+        /** {@code METHOD key} for every request made against an object rather than the bucket. */
+        private final java.util.List<String> objectRequests = new CopyOnWriteArrayList<>();
+        /** Invoked on the server thread whenever an object is read, before the response is sent. */
+        private final AtomicReference<Runnable> onObjectRead = new AtomicReference<>(() ->
+        {
+        });
 
-        private StubS3Endpoint(boolean stall) throws IOException {
+        private StubS3Endpoint(boolean stall, java.util.List<String> keys) throws IOException {
             this.server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
             this.executor = Executors.newCachedThreadPool();
             this.server.setExecutor(executor);
@@ -351,7 +450,41 @@ class TriggerKillTest {
                     return;
                 }
 
-                byte[] body = EMPTY_LISTING.getBytes(StandardCharsets.UTF_8);
+                String objectPrefix = "/" + BUCKET + "/";
+                String path = exchange.getRequestURI().getPath();
+                if (path.startsWith(objectPrefix) && path.length() > objectPrefix.length()) {
+                    String key = path.substring(objectPrefix.length());
+                    String method = exchange.getRequestMethod();
+                    objectRequests.add(method + " " + key);
+
+                    if (method.equals("DELETE")) {
+                        exchange.sendResponseHeaders(204, -1);
+                        exchange.close();
+                        return;
+                    }
+
+                    onObjectRead.get().run();
+
+                    exchange.getResponseHeaders().set("Content-Type", "application/octet-stream");
+                    exchange.getResponseHeaders().set("ETag", "\"" + key + "\"");
+                    exchange.getResponseHeaders().set("Last-Modified", "Thu, 01 Jan 2026 00:00:00 GMT");
+                    if (method.equals("HEAD")) {
+                        exchange.getResponseHeaders().set("Content-Length", String.valueOf(CONTENT.length));
+                        exchange.sendResponseHeaders(200, -1);
+                        exchange.close();
+                        return;
+                    }
+                    exchange.sendResponseHeaders(200, CONTENT.length);
+                    try (var out = exchange.getResponseBody()) {
+                        out.write(CONTENT);
+                    }
+                    return;
+                }
+
+                String versions = keys.stream()
+                    .map(key -> VERSION.formatted(key, key, CONTENT.length))
+                    .collect(Collectors.joining());
+                byte[] body = LISTING.formatted(BUCKET, versions).getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().set("Content-Type", "application/xml");
                 exchange.sendResponseHeaders(200, body.length);
                 try (var out = exchange.getResponseBody()) {
@@ -363,11 +496,23 @@ class TriggerKillTest {
         }
 
         static StubS3Endpoint stalling() throws IOException {
-            return new StubS3Endpoint(true);
+            return new StubS3Endpoint(true, java.util.List.of());
         }
 
         static StubS3Endpoint responding() throws IOException {
-            return new StubS3Endpoint(false);
+            return new StubS3Endpoint(false, java.util.List.of());
+        }
+
+        static StubS3Endpoint serving(String... keys) throws IOException {
+            return new StubS3Endpoint(false, java.util.List.of(keys));
+        }
+
+        void onObjectRead(Runnable hook) {
+            onObjectRead.set(hook);
+        }
+
+        java.util.List<String> objectRequests() {
+            return java.util.List.copyOf(objectRequests);
         }
 
         String url() {

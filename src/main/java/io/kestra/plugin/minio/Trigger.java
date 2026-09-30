@@ -209,7 +209,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
 
     protected SslOptions ssl;
 
-    // Holds the List task built by the current evaluate() so kill()/stop() can be forwarded to it. A fresh
+    // Holds the List task built by the current evaluate() so kill() can be forwarded to it. A fresh
     // List is built on every evaluate(), so this must be an AtomicReference rather than a plain field: a
     // killed evaluation must not poison later ones, and kill() may arrive before or after any evaluation
     // has started.
@@ -219,9 +219,9 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     @EqualsAndHashCode.Exclude
     private final transient AtomicReference<List> activeListTask = new AtomicReference<>();
 
-    // Sticky flag: kill()/stop() may arrive in the gap between a cycle finishing (activeListTask reset to
+    // Sticky flag: kill() may arrive in the gap between a cycle finishing (activeListTask reset to
     // null) and the next evaluate() publishing its freshly built List, where the signal would otherwise find
-    // no task to forward to and be silently dropped. Never reset: once a trigger is killed or stopped, no
+    // no task to forward to and be silently dropped. Never reset: once a trigger is killed, no
     // further evaluate() cycle should be allowed to start.
     @Getter(AccessLevel.NONE)
     @JsonIgnore
@@ -235,7 +235,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
 
         if (this.killedOrStopped.get()) {
             runContext.logger().debug(
-                "MinIO trigger id={} received kill()/stop() before this evaluation cycle started; skipping poll",
+                "MinIO trigger id={} received kill() before this evaluation cycle started; skipping poll",
                 this.id
             );
             return Optional.empty();
@@ -266,7 +266,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
 
         this.activeListTask.set(task);
         // Re-check right after publishing: closes the gap between building the task and the set() above, where
-        // a kill()/stop() landing in between finds the previous cycle's (null) reference and is otherwise
+        // a kill() landing in between finds the previous cycle's (null) reference and is otherwise
         // silently dropped, letting the freshly built list run to its full timeout.
         if (this.killedOrStopped.get()) {
             this.activeListTask.compareAndSet(task, null);
@@ -307,6 +307,12 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
                 if (stateChange.fire()) {
                     var changeType = stateChange.isNew() ? ChangeType.CREATE : ChangeType.UPDATE;
 
+                    // Skip the remaining downloads once killed; the check before writeState below then discards
+                    // the partially computed state.
+                    if (this.killedOrStopped.get()) {
+                        return Stream.empty();
+                    }
+
                     var download = Download.builder()
                         .id(this.id)
                         .type(Download.class.getName())
@@ -335,6 +341,13 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
             }))
             .collect(Collectors.toList());
 
+        // Last point where a kill can be honoured. Once state is written the configured action must run and the
+        // execution be emitted, otherwise objects would be recorded as seen without ever having fired, so there
+        // is deliberately no check between writeState and performAction.
+        if (this.killedOrStopped.get()) {
+            return Optional.empty();
+        }
+
         writeState(runContext, rStateKey, previousState, rStateTtl);
 
         if (toFire.isEmpty()) {
@@ -353,37 +366,18 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     }
 
     /**
-     * {@inheritDoc}
+     * Aborts the in-flight listing, if any, and prevents the evaluation from reaching its side effects.
+     *
+     * <p>
+     * Nothing is lost: trigger state is only written once every download has completed, so a killed poll
+     * simply does not fire and its objects are picked up again by the next evaluation.
+     *
+     * <p>
+     * {@code stop()} is deliberately not overridden. A graceful stop lets the current evaluation drain, whereas
+     * aborting the request would surface as a failure rather than a kill.
      **/
     @Override
     public void kill() {
-        signalStop();
-    }
-
-    /**
-     * {@inheritDoc}
-     **/
-    @Override
-    public void stop() {
-        signalStop();
-    }
-
-    /**
-     * Aborts the in-flight listing, if any, and prevents further evaluation cycles.
-     *
-     * <p>
-     * A MinIO listing is a read-only operation with nothing to commit or acknowledge, so a hard kill and a
-     * graceful stop have the same effect: abort the request and let the evaluation unwind. Nothing is lost,
-     * because trigger state is only written once a listing has succeeded, so an aborted poll simply does not
-     * fire and is re-dispatched on the next cycle.
-     *
-     * <p>
-     * {@code stop()} matters as much as {@code kill()} here: on shutdown the worker signals every running job
-     * and then waits for its executor to drain, so a trigger still blocked on an unanswerable request would
-     * otherwise hold the shutdown open until the grace period expired. Both paths are non-blocking, as
-     * {@code stop()} requires.
-     */
-    private void signalStop() {
         this.killedOrStopped.set(true);
         Optional.ofNullable(this.activeListTask.get()).ifPresent(List::kill);
     }

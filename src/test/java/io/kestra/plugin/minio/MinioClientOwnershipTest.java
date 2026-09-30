@@ -24,9 +24,9 @@ import static org.hamcrest.Matchers.sameInstance;
  *
  * <p>
  * Building the HTTP client in the plugin rather than letting the SDK do it is what makes cancellation
- * possible, but it also moves the decision of who tears that client down. These tests pin both halves of the
- * SDK's own rule: a client the plugin defaulted in is closed with the MinIO client, while one supplied through
- * configuration is left untouched.
+ * possible, but it also makes the plugin responsible for tearing that client down. These tests pin that every
+ * HTTP client the plugin builds, whether defaulted in or derived from TLS configuration, is closed with the
+ * MinIO client.
  */
 @KestraTest
 class MinioClientOwnershipTest {
@@ -49,19 +49,19 @@ class MinioClientOwnershipTest {
     }
 
     @Test
-    void shouldLeaveAConfiguredHttpClientOpen() throws Exception {
+    void shouldCloseTheHttpClientItBuiltFromTlsConfiguration() throws Exception {
         List task = task()
             .ssl(SslOptions.builder().insecureTrustAllCertificates(Property.ofValue(true)).build())
             .build();
 
         var cancellableClient = task.cancellableClient(runContext(task));
+        assertThat(cancellableClient.httpClient().dispatcher().executorService().isShutdown(), is(false));
 
         cancellableClient.close();
 
-        // The client came from user configuration, so the SDK never owned it and close() must not tear it down.
-        assertThat(cancellableClient.httpClient().dispatcher().executorService().isShutdown(), is(false));
-
-        cancellableClient.httpClient().dispatcher().executorService().shutdownNow();
+        // The TLS client is built by the plugin for this client alone, so nothing else can release it: leaving it
+        // open would leak its dispatcher threads and pooled connections on every evaluation.
+        assertThat(cancellableClient.httpClient().dispatcher().executorService().isShutdown(), is(true));
     }
 
     @Test
