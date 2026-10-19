@@ -5,9 +5,11 @@ import org.junit.jupiter.api.Test;
 
 import io.kestra.core.models.property.Property;
 import io.kestra.core.utils.IdUtils;
+import io.kestra.plugin.minio.model.MinioObject;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ListTest extends AbstractMinIoTest {
 
@@ -51,6 +53,19 @@ public class ListTest extends AbstractMinIoTest {
             .build();
         output = task.run(runContext(task));
         assertThat(output.getObjects().size(), is(1));
+
+        task = list()
+            .prefix(Property.ofValue("tasks/%s/".formatted(dir)))
+            .delimiter(Property.ofValue("/"))
+            .recursive(Property.ofValue(false))
+            .build();
+        output = task.run(runContext(task));
+        MinioObject directory = output.getObjects().stream()
+            .filter(object -> object.getKey().endsWith("/"))
+            .findFirst()
+            .orElseThrow();
+        assertThat(directory.getLastModified(), nullValue());
+        assertThat(directory.getOwner(), nullValue());
     }
 
 }

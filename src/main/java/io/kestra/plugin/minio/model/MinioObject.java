@@ -30,7 +30,7 @@ public class MinioObject {
             .key(object.objectName())
             .etag(object.etag())
             .size(object.size())
-            .lastModified(object.lastModified().toInstant())
+            .lastModified(object.lastModified() == null ? null : object.lastModified().toInstant())
             .owner(Owner.of(object.owner()))
             .build();
     }
