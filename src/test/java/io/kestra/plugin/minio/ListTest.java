@@ -5,9 +5,11 @@ import org.junit.jupiter.api.Test;
 
 import io.kestra.core.models.property.Property;
 import io.kestra.core.utils.IdUtils;
+import io.kestra.plugin.minio.model.MinioObject;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ListTest extends AbstractMinIoTest {
 
@@ -51,6 +53,38 @@ public class ListTest extends AbstractMinIoTest {
             .build();
         output = task.run(runContext(task));
         assertThat(output.getObjects().size(), is(1));
+    }
+
+    @Test
+    void nonRecursiveListingReturnsDirectoryEntries() throws Exception {
+        this.createBucket();
+
+        String dir = IdUtils.create();
+        upload("reports/%s".formatted(dir));
+        upload("reports/%s".formatted(dir));
+
+        List task = list()
+            .prefix(Property.ofValue("reports/"))
+            .delimiter(Property.ofValue("/"))
+            .recursive(Property.ofValue(false))
+            .includeVersions(Property.ofValue(false))
+            .build();
+        List.Output output = task.run(runContext(task));
+
+        assertThat(output.getObjects().size(), is(1));
+        MinioObject directory = output.getObjects().getFirst();
+        assertThat(directory.getKey(), is("reports/%s/".formatted(dir)));
+        assertThat(directory.getLastModified(), is(nullValue()));
+
+        task = list()
+            .prefix(Property.ofValue("reports/"))
+            .delimiter(Property.ofValue("/"))
+            .recursive(Property.ofValue(false))
+            .includeVersions(Property.ofValue(false))
+            .filter(Property.ofValue(List.Filter.FILES))
+            .build();
+        output = task.run(runContext(task));
+        assertThat(output.getObjects().size(), is(0));
     }
 
 }
