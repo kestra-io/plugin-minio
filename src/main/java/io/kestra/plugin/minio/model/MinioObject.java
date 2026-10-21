@@ -17,6 +17,12 @@ public class MinioObject {
 
     String key;
 
+    String versionId;
+
+    Boolean isLatest;
+
+    Boolean isDeleteMarker;
+
     String etag;
 
     Long size;
@@ -26,8 +32,14 @@ public class MinioObject {
     Owner owner;
 
     public static MinioObject of(Item object) {
+        // unversioned listings report isLatest/isDeleteMarker as false, keep them null instead
+        boolean versioned = object.versionId() != null;
+
         return MinioObject.builder()
             .key(object.objectName())
+            .versionId(object.versionId())
+            .isLatest(versioned ? object.isLatest() : null)
+            .isDeleteMarker(versioned ? object.isDeleteMarker() : null)
             .etag(object.etag())
             .size(object.size())
             .lastModified(object.lastModified().toInstant())
