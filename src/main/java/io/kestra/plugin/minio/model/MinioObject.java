@@ -2,6 +2,7 @@ package io.kestra.plugin.minio.model;
 
 import java.net.URI;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 
 import io.minio.messages.Item;
 import lombok.Builder;
@@ -35,6 +36,9 @@ public class MinioObject {
         // unversioned listings report isLatest/isDeleteMarker as false, keep them null instead
         boolean versioned = object.versionId() != null;
 
+        // common-prefix (directory) entries from a non-recursive listing carry no last-modified timestamp
+        ZonedDateTime lastModified = object.lastModified();
+
         return MinioObject.builder()
             .key(object.objectName())
             .versionId(object.versionId())
@@ -42,7 +46,7 @@ public class MinioObject {
             .isDeleteMarker(versioned ? object.isDeleteMarker() : null)
             .etag(object.etag())
             .size(object.size())
-            .lastModified(object.lastModified().toInstant())
+            .lastModified(lastModified == null ? null : lastModified.toInstant())
             .owner(Owner.of(object.owner()))
             .build();
     }
