@@ -8,6 +8,10 @@ import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.minio.model.ObjectOutput;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+
 import io.minio.CopyObjectArgs;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
@@ -102,6 +106,24 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
                 sourceBuilder.versionId(runContext.render(this.from.versionId).as(String.class).orElseThrow());
             }
 
+            if (this.from.matchETag != null) {
+                sourceBuilder.matchETag(runContext.render(this.from.matchETag).as(String.class).orElseThrow());
+            }
+
+            if (this.from.notMatchETag != null) {
+                sourceBuilder.notMatchETag(runContext.render(this.from.notMatchETag).as(String.class).orElseThrow());
+            }
+
+            if (this.from.modifiedSince != null) {
+                Instant modifiedSince = runContext.render(this.from.modifiedSince).as(Instant.class).orElseThrow();
+                sourceBuilder.modifiedSince(ZonedDateTime.ofInstant(modifiedSince, ZoneOffset.UTC));
+            }
+
+            if (this.from.unmodifiedSince != null) {
+                Instant unmodifiedSince = runContext.render(this.from.unmodifiedSince).as(Instant.class).orElseThrow();
+                sourceBuilder.unmodifiedSince(ZonedDateTime.ofInstant(unmodifiedSince, ZoneOffset.UTC));
+            }
+
             CopyObjectArgs.Builder builder = CopyObjectArgs.builder()
                 .bucket(runContext.render(this.to.bucket != null ? this.to.bucket : this.from.bucket).as(String.class).orElseThrow())
                 .object(runContext.render(this.to.key).as(String.class).orElse(null))
@@ -157,6 +179,30 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
             title = "The specific version of the object"
         )
         private Property<String> versionId;
+
+        @Schema(
+            title = "Copy only if the source ETag matches",
+            description = "Maps to the S3 `x-amz-copy-source-if-match` header. The copy fails if the source ETag differs."
+        )
+        private Property<String> matchETag;
+
+        @Schema(
+            title = "Copy only if the source ETag does not match",
+            description = "Maps to the S3 `x-amz-copy-source-if-none-match` header."
+        )
+        private Property<String> notMatchETag;
+
+        @Schema(
+            title = "Copy only if the source was modified after this time",
+            description = "Maps to the S3 `x-amz-copy-source-if-modified-since` header."
+        )
+        private Property<Instant> modifiedSince;
+
+        @Schema(
+            title = "Copy only if the source was not modified after this time",
+            description = "Maps to the S3 `x-amz-copy-source-if-unmodified-since` header."
+        )
+        private Property<Instant> unmodifiedSince;
     }
 
     @SuperBuilder
