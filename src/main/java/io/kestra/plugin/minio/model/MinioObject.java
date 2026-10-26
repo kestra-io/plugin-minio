@@ -35,14 +35,17 @@ public class MinioObject {
         // unversioned listings report isLatest/isDeleteMarker as false, keep them null instead
         boolean versioned = object.versionId() != null;
 
+        // common-prefix (directory) entries from a non-recursive listing carry no last-modified timestamp
+        var lastModified = object.lastModified();
+
         return MinioObject.builder()
             .key(object.objectName())
             .versionId(object.versionId())
             .isLatest(versioned ? object.isLatest() : null)
             .isDeleteMarker(versioned ? object.isDeleteMarker() : null)
             .etag(object.etag())
-            .size(object.size())
-            .lastModified(object.lastModified().toInstant())
+            .size(object.isDir() ? null : object.size())
+            .lastModified(lastModified == null ? null : lastModified.toInstant())
             .owner(Owner.of(object.owner()))
             .build();
     }
