@@ -12,9 +12,12 @@ import org.testcontainers.utility.MountableFile;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.utils.IdUtils;
 
+import io.minio.errors.ErrorResponseException;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CopyTest extends AbstractMinIoTest {
     private static String caPem;
@@ -166,6 +169,102 @@ public class CopyTest extends AbstractMinIoTest {
     @Test
     void deleteOriginal() throws Exception {
         this.run(true);
+    }
+
+    @Test
+    void copyWhenMatchETagMatches() throws Exception {
+        this.createBucket();
+
+        var sourceKey = upload("tasks/match");
+        var listTask = list().prefix(Property.ofValue(sourceKey)).build();
+        var etag = listTask.run(runContext(listTask)).getObjects().getFirst().getEtag();
+
+        var destKey = "tasks/%s/copy".formatted(IdUtils.create());
+
+        var copy = Copy.builder()
+            .id(IdUtils.create())
+            .type(Copy.class.getName())
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
+            .from(
+                Copy.CopyObjectFrom.builder()
+                    .bucket(Property.ofValue(this.BUCKET))
+                    .key(Property.ofValue(sourceKey))
+                    .matchETag(Property.ofValue(etag))
+                    .build()
+            )
+            .to(Copy.CopyObject.builder().key(Property.ofValue(destKey)).build())
+            .build();
+
+        var output = copy.run(runContext(copy));
+
+        assertThat(output.getKey(), is(destKey));
+        assertThat(output.getETag(), is(notNullValue()));
+
+        var listDest = list().prefix(Property.ofValue(destKey)).build();
+        assertThat(listDest.run(runContext(listDest)).getObjects().size(), is(1));
+    }
+
+    @Test
+    void copyWhenMatchETagMismatches() throws Exception {
+        this.createBucket();
+
+        var sourceKey = upload("tasks/mismatch");
+        var destKey = "tasks/%s/copy".formatted(IdUtils.create());
+
+        var copy = Copy.builder()
+            .id(IdUtils.create())
+            .type(Copy.class.getName())
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
+            .from(
+                Copy.CopyObjectFrom.builder()
+                    .bucket(Property.ofValue(this.BUCKET))
+                    .key(Property.ofValue(sourceKey))
+                    .matchETag(Property.ofValue("\"00000000000000000000000000000000-0\""))
+                    .build()
+            )
+            .to(Copy.CopyObject.builder().key(Property.ofValue(destKey)).build())
+            .build();
+
+        var error = assertThrows(ErrorResponseException.class, () -> copy.run(runContext(copy)));
+        assertThat(error.response().code(), is(412));
+        assertThat(error.errorResponse().code(), is("PreconditionFailed"));
+
+        var listDest = list().prefix(Property.ofValue(destKey)).build();
+        assertThat(listDest.run(runContext(listDest)).getObjects().size(), is(0));
+    }
+
+    @Test
+    void copyWhenModifiedSinceRenderedFromExpression() throws Exception {
+        this.createBucket();
+
+        var sourceKey = upload("tasks/modified-since");
+        var destKey = "tasks/%s/copy".formatted(IdUtils.create());
+
+        var copy = Copy.builder()
+            .id(IdUtils.create())
+            .type(Copy.class.getName())
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
+            .from(
+                Copy.CopyObjectFrom.builder()
+                    .bucket(Property.ofValue(this.BUCKET))
+                    .key(Property.ofValue(sourceKey))
+                    .modifiedSince(Property.ofExpression("{{ '2024-06-13T12:00:00Z' }}"))
+                    .build()
+            )
+            .to(Copy.CopyObject.builder().key(Property.ofValue(destKey)).build())
+            .build();
+
+        var output = copy.run(runContext(copy));
+        assertThat(output.getKey(), is(destKey));
     }
 
 }

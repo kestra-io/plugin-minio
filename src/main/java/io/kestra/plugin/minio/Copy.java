@@ -16,6 +16,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+
 @SuperBuilder
 @ToString
 @EqualsAndHashCode
@@ -63,6 +67,36 @@ import lombok.experimental.SuperBuilder;
                       bucket: "my-bucket2"
                       key: "path/to/file2"
                 """
+        ),
+        @Example(
+            title = "Copy only when the source ETag matches a listed object",
+            full = true,
+            code = """
+                id: minio_copy_if_match
+                namespace: company.team
+
+                tasks:
+                  - id: list
+                    type: io.kestra.plugin.minio.List
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
+                    region: "eu-central-1"
+                    bucket: "my-bucket"
+                    prefix: "path/to/file"
+
+                  - id: copy
+                    type: io.kestra.plugin.minio.Copy
+                    accessKeyId: "<access-key>"
+                    secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
+                    region: "eu-central-1"
+                    from:
+                      bucket: "my-bucket"
+                      key: "path/to/file"
+                      matchETag: "{{ outputs.list.objects[0].etag }}"
+                    to:
+                      bucket: "my-bucket"
+                      key: "path/to/file-copy"
+                """
         )
     }
 )
@@ -102,6 +136,28 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
                 sourceBuilder.versionId(runContext.render(this.from.versionId).as(String.class).orElseThrow());
             }
 
+            if (this.from.matchETag != null) {
+                sourceBuilder.matchETag(unquote(runContext.render(this.from.matchETag).as(String.class)
+                    .orElseThrow(() -> new IllegalArgumentException("from.matchETag rendered to an empty value; check the expression"))));
+            }
+
+            if (this.from.notMatchETag != null) {
+                sourceBuilder.notMatchETag(unquote(runContext.render(this.from.notMatchETag).as(String.class)
+                    .orElseThrow(() -> new IllegalArgumentException("from.notMatchETag rendered to an empty value; check the expression"))));
+            }
+
+            if (this.from.modifiedSince != null) {
+                var rModifiedSince = runContext.render(this.from.modifiedSince).as(Instant.class)
+                    .orElseThrow(() -> new IllegalArgumentException("from.modifiedSince rendered to an empty value; check the expression"));
+                sourceBuilder.modifiedSince(ZonedDateTime.ofInstant(rModifiedSince, ZoneOffset.UTC));
+            }
+
+            if (this.from.unmodifiedSince != null) {
+                var rUnmodifiedSince = runContext.render(this.from.unmodifiedSince).as(Instant.class)
+                    .orElseThrow(() -> new IllegalArgumentException("from.unmodifiedSince rendered to an empty value; check the expression"));
+                sourceBuilder.unmodifiedSince(ZonedDateTime.ofInstant(rUnmodifiedSince, ZoneOffset.UTC));
+            }
+
             CopyObjectArgs.Builder builder = CopyObjectArgs.builder()
                 .bucket(runContext.render(this.to.bucket != null ? this.to.bucket : this.from.bucket).as(String.class).orElseThrow())
                 .object(runContext.render(this.to.key).as(String.class).orElse(null))
@@ -134,6 +190,19 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
         }
     }
 
+    /**
+     * Strips one pair of surrounding double quotes from an ETag.
+     * <p>
+     * ETags returned by the list and upload tasks are quoted (for example {@code "9b2cf535f27731c974343645a3985328"}),
+     * while the S3 precondition headers expect the unquoted value. Both forms are accepted.
+     */
+    private static String unquote(String rEtag) {
+        if (rEtag.length() >= 2 && rEtag.startsWith("\"") && rEtag.endsWith("\"")) {
+            return rEtag.substring(1, rEtag.length() - 1);
+        }
+        return rEtag;
+    }
+
     @SuperBuilder(toBuilder = true)
     @Getter
     @NoArgsConstructor
@@ -157,6 +226,52 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
             title = "The specific version of the object"
         )
         private Property<String> versionId;
+
+        @Schema(
+            title = "Copy only if the source ETag matches",
+            description = """
+                Maps to the S3 `x-amz-copy-source-if-match` header.
+                The copy fails with a precondition error when the source ETag differs.
+                Accepts both quoted and unquoted ETags, e.g. `"9b2cf535f27731c974343645a3985328"` or
+                `9b2cf535f27731c974343645a3985328`; one pair of surrounding double quotes is stripped.
+                """
+        )
+        @PluginProperty(group = "reliability")
+        private Property<String> matchETag;
+
+        @Schema(
+            title = "Copy only if the source ETag does not match",
+            description = """
+                Maps to the S3 `x-amz-copy-source-if-none-match` header.
+                The copy fails with a precondition error when the source ETag matches the given value.
+                Accepts both quoted and unquoted ETags, e.g. `"9b2cf535f27731c974343645a3985328"` or
+                `9b2cf535f27731c974343645a3985328`; one pair of surrounding double quotes is stripped.
+                """
+        )
+        @PluginProperty(group = "reliability")
+        private Property<String> notMatchETag;
+
+        @Schema(
+            title = "Copy only if the source was modified after this time",
+            description = """
+                Maps to the S3 `x-amz-copy-source-if-modified-since` header.
+                Use an ISO-8601 instant in UTC, for example `2024-06-13T12:00:00Z`.
+                The copy fails with a precondition error when the source was not modified after this time.
+                """
+        )
+        @PluginProperty(group = "reliability")
+        private Property<Instant> modifiedSince;
+
+        @Schema(
+            title = "Copy only if the source was not modified after this time",
+            description = """
+                Maps to the S3 `x-amz-copy-source-if-unmodified-since` header.
+                Use an ISO-8601 instant in UTC, for example `2024-06-13T12:00:00Z`.
+                The copy fails with a precondition error when the source was modified after this time.
+                """
+        )
+        @PluginProperty(group = "reliability")
+        private Property<Instant> unmodifiedSince;
     }
 
     @SuperBuilder
