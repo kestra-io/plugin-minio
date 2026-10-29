@@ -82,7 +82,7 @@ import java.time.ZonedDateTime;
                     secretKeyId: "{{ secret('MINIO_SECRET_KEY_ID') }}"
                     region: "eu-central-1"
                     bucket: "my-bucket"
-                    prefix: "path/to/"
+                    prefix: "path/to/file"
 
                   - id: copy
                     type: io.kestra.plugin.minio.Copy
@@ -137,13 +137,13 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
             }
 
             if (this.from.matchETag != null) {
-                sourceBuilder.matchETag(runContext.render(this.from.matchETag).as(String.class)
-                    .orElseThrow(() -> new IllegalArgumentException("from.matchETag rendered to an empty value; check the expression")));
+                sourceBuilder.matchETag(unquote(runContext.render(this.from.matchETag).as(String.class)
+                    .orElseThrow(() -> new IllegalArgumentException("from.matchETag rendered to an empty value; check the expression"))));
             }
 
             if (this.from.notMatchETag != null) {
-                sourceBuilder.notMatchETag(runContext.render(this.from.notMatchETag).as(String.class)
-                    .orElseThrow(() -> new IllegalArgumentException("from.notMatchETag rendered to an empty value; check the expression")));
+                sourceBuilder.notMatchETag(unquote(runContext.render(this.from.notMatchETag).as(String.class)
+                    .orElseThrow(() -> new IllegalArgumentException("from.notMatchETag rendered to an empty value; check the expression"))));
             }
 
             if (this.from.modifiedSince != null) {
@@ -190,6 +190,19 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
         }
     }
 
+    /**
+     * Strips one pair of surrounding double quotes from an ETag.
+     * <p>
+     * ETags returned by the list and upload tasks are quoted (for example {@code "9b2cf535f27731c974343645a3985328"}),
+     * while the S3 precondition headers expect the unquoted value. Both forms are accepted.
+     */
+    private static String unquote(String rEtag) {
+        if (rEtag.length() >= 2 && rEtag.startsWith("\"") && rEtag.endsWith("\"")) {
+            return rEtag.substring(1, rEtag.length() - 1);
+        }
+        return rEtag;
+    }
+
     @SuperBuilder(toBuilder = true)
     @Getter
     @NoArgsConstructor
@@ -219,6 +232,8 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
             description = """
                 Maps to the S3 `x-amz-copy-source-if-match` header.
                 The copy fails with a precondition error when the source ETag differs.
+                Accepts both quoted and unquoted ETags, e.g. `"9b2cf535f27731c974343645a3985328"` or
+                `9b2cf535f27731c974343645a3985328`; one pair of surrounding double quotes is stripped.
                 """
         )
         @PluginProperty(group = "reliability")
@@ -229,6 +244,8 @@ public class Copy extends AbstractMinioObject implements RunnableTask<Copy.Outpu
             description = """
                 Maps to the S3 `x-amz-copy-source-if-none-match` header.
                 The copy fails with a precondition error when the source ETag matches the given value.
+                Accepts both quoted and unquoted ETags, e.g. `"9b2cf535f27731c974343645a3985328"` or
+                `9b2cf535f27731c974343645a3985328`; one pair of surrounding double quotes is stripped.
                 """
         )
         @PluginProperty(group = "reliability")

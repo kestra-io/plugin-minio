@@ -182,7 +182,7 @@ public class CopyTest extends AbstractMinIoTest {
         var destKey = "tasks/%s/copy".formatted(IdUtils.create());
 
         var copy = Copy.builder()
-            .id(CopyTest.class.getSimpleName())
+            .id(IdUtils.create())
             .type(Copy.class.getName())
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
@@ -215,7 +215,7 @@ public class CopyTest extends AbstractMinIoTest {
         var destKey = "tasks/%s/copy".formatted(IdUtils.create());
 
         var copy = Copy.builder()
-            .id(CopyTest.class.getSimpleName())
+            .id(IdUtils.create())
             .type(Copy.class.getName())
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
@@ -247,7 +247,7 @@ public class CopyTest extends AbstractMinIoTest {
         var destKey = "tasks/%s/copy".formatted(IdUtils.create());
 
         var copy = Copy.builder()
-            .id(CopyTest.class.getSimpleName())
+            .id(IdUtils.create())
             .type(Copy.class.getName())
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
             .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
