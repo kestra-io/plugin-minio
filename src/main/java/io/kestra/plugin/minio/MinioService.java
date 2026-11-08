@@ -41,7 +41,11 @@ public class MinioService {
                 delete.run(runContext);
             }
         } else if (action == Downloads.Action.MOVE) {
+            if (moveTo == null) {
+                throw new IllegalArgumentException("Action 'MOVE' requires 'moveTo' to be configured.");
+            }
             for (MinioObject object : list) {
+                String targetKey = destinationKey(runContext, moveTo.getKey(), object.getKey());
                 Copy copy = Copy.builder()
                     .id("archive")
                     .type(Copy.class.getName())
@@ -58,14 +62,7 @@ public class MinioService {
                     )
                     .to(
                         moveTo.toBuilder()
-                            .key(
-                                Property.ofValue(
-                                    "%s/%s".formatted(
-                                        StringUtils.stripEnd(runContext.render(moveTo.getKey()).as(String.class).orElse(null) + "/", "/"),
-                                        FilenameUtils.getName(object.getKey())
-                                    )
-                                )
-                            )
+                            .key(Property.ofValue(targetKey))
                             .build()
                     )
                     .delete(Property.ofValue(true))
@@ -73,6 +70,18 @@ public class MinioService {
                 copy.run(runContext);
             }
         }
+    }
+
+    static String destinationKey(RunContext runContext, Property<String> moveToKey, String sourceKey) throws Exception {
+        String renderedKey = moveToKey == null ? null : runContext.render(moveToKey).as(String.class).orElse(null);
+        String filename = FilenameUtils.getName(sourceKey);
+        if (StringUtils.isNotBlank(renderedKey)) {
+            String prefix = StringUtils.stripEnd(renderedKey.trim(), "/");
+            if (prefix.isEmpty() == false) {
+                return "%s/%s".formatted(prefix, filename);
+            }
+        }
+        return filename;
     }
 
     public static Pair<URI, Long> download(RunContext runContext, MinioAsyncClient client, String bucket, String key, String versionId) throws Exception {
