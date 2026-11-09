@@ -58,9 +58,9 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                     type: io.kestra.plugin.core.flow.ForEach
                     values: "{{ trigger.objects | jq('.[].uri') }}"
                     tasks:
-                      - id: return
-                        type: io.kestra.plugin.core.debug.Return
-                        format: "{{ taskrun.value }}"
+                      - id: log_object
+                        type: io.kestra.plugin.core.log.Log
+                        message: "{{ taskrun.value }}"
 
                 triggers:
                   - id: watch
@@ -88,9 +88,9 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                     type: io.kestra.plugin.core.flow.ForEach
                     values: "{{ trigger.objects | jq('.[].key') }}"
                     tasks:
-                      - id: return
-                        type: io.kestra.plugin.core.debug.Return
-                        format: "{{ taskrun.value }}"
+                      - id: log_object
+                        type: io.kestra.plugin.core.log.Log
+                        message: "{{ taskrun.value }}"
                       - id: delete
                         type: io.kestra.plugin.minio.Delete
                         accessKeyId: "{{ secret('MINIO_ACCESS_KEY_ID') }}"
@@ -122,9 +122,9 @@ import static io.kestra.core.utils.Rethrow.throwFunction;
                     type: io.kestra.plugin.core.flow.ForEach
                     values: "{{ trigger.objects | jq('.[].uri') }}"
                     tasks:
-                      - id: return
-                        type: io.kestra.plugin.core.debug.Return
-                        format: "{{ taskrun.value }}"
+                      - id: log_object
+                        type: io.kestra.plugin.core.log.Log
+                        message: "{{ taskrun.value }}"
 
                 triggers:
                   - id: watch
