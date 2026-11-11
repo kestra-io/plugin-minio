@@ -3,6 +3,7 @@ package io.kestra.plugin.minio;
 import java.io.File;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -26,6 +27,9 @@ public class MinioService {
         String bucket,
         MinioConnectionInterface minioConnection,
         Copy.CopyObject moveTo) throws Exception {
+        if (action == Downloads.Action.MOVE && moveTo == null) {
+            throw new IllegalArgumentException("Action 'MOVE' requires 'moveTo' to be configured.");
+        }
         if (action == Downloads.Action.DELETE) {
             for (MinioObject object : list) {
                 Delete delete = Delete.builder()
@@ -41,9 +45,6 @@ public class MinioService {
                 delete.run(runContext);
             }
         } else if (action == Downloads.Action.MOVE) {
-            if (moveTo == null) {
-                throw new IllegalArgumentException("Action 'MOVE' requires 'moveTo' to be configured.");
-            }
             for (MinioObject object : list) {
                 String targetKey = destinationKey(runContext, moveTo.getKey(), object.getKey());
                 Copy copy = Copy.builder()
@@ -73,15 +74,11 @@ public class MinioService {
     }
 
     static String destinationKey(RunContext runContext, Property<String> moveToKey, String sourceKey) throws Exception {
-        String renderedKey = moveToKey == null ? null : runContext.render(moveToKey).as(String.class).orElse(null);
         String filename = FilenameUtils.getName(sourceKey);
-        if (StringUtils.isNotBlank(renderedKey)) {
-            String prefix = StringUtils.stripEnd(renderedKey.trim(), "/");
-            if (prefix.isEmpty() == false) {
-                return "%s/%s".formatted(prefix, filename);
-            }
-        }
-        return filename;
+        Optional<String> rPrefix = moveToKey == null
+            ? Optional.empty()
+            : runContext.render(moveToKey).as(String.class).map(k -> StringUtils.stripEnd(k, "/")).filter(StringUtils::isNotBlank);
+        return rPrefix.map(p -> p + "/" + filename).orElse(filename);
     }
 
     public static Pair<URI, Long> download(RunContext runContext, MinioAsyncClient client, String bucket, String key, String versionId) throws Exception {

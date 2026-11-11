@@ -80,4 +80,42 @@ public class DownloadsTest extends AbstractMinIoTest {
         assertThat(listOutput.getObjects().size(), is(2));
     }
 
+    @Test
+    void moveWithBucketOnlyAndNoKey() throws Exception {
+        this.createBucket();
+
+        upload("/tasks/nokey/");
+        upload("/tasks/nokey/");
+
+        Downloads task = Downloads.builder()
+            .id(DownloadsTest.class.getSimpleName())
+            .type(Downloads.class.getName())
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
+            .action(Property.ofValue(Downloads.Action.MOVE))
+            .moveTo(
+                Copy.CopyObject.builder()
+                    .bucket(Property.ofValue(this.BUCKET))
+                    .build()
+            )
+            .build();
+
+        Downloads.Output run = task.run(runContext(task));
+
+        assertThat(run.getObjects().size(), is(2));
+
+        List list = list().prefix(Property.ofValue("tasks/nokey")).build();
+        List.Output listOutput = list.run(runContext(list));
+        assertThat(listOutput.getObjects().size(), is(0));
+
+        list = list().build();
+        listOutput = list.run(runContext(list));
+        listOutput.getObjects().forEach(obj ->
+            assertThat(obj.getKey().contains("/"), is(false))
+        );
+    }
+
 }
