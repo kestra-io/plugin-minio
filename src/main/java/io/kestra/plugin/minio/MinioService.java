@@ -27,9 +27,6 @@ public class MinioService {
         String bucket,
         MinioConnectionInterface minioConnection,
         Copy.CopyObject moveTo) throws Exception {
-        if (action == Downloads.Action.MOVE && moveTo == null) {
-            throw new IllegalArgumentException("Action 'MOVE' requires 'moveTo' to be configured.");
-        }
         if (action == Downloads.Action.DELETE) {
             for (MinioObject object : list) {
                 Delete delete = Delete.builder()
@@ -45,8 +42,14 @@ public class MinioService {
                 delete.run(runContext);
             }
         } else if (action == Downloads.Action.MOVE) {
+            Optional<String> rPrefix = runContext.render(moveTo.getKey())
+                .as(String.class)
+                .map(k -> StringUtils.stripEnd(k, "/"))
+                .filter(StringUtils::isNotBlank);
+
             for (MinioObject object : list) {
-                String targetKey = destinationKey(runContext, moveTo.getKey(), object.getKey());
+                String filename = FilenameUtils.getName(object.getKey());
+                String targetKey = rPrefix.map(p -> "%s/%s".formatted(p, filename)).orElse(filename);
                 Copy copy = Copy.builder()
                     .id("archive")
                     .type(Copy.class.getName())
@@ -71,14 +74,6 @@ public class MinioService {
                 copy.run(runContext);
             }
         }
-    }
-
-    static String destinationKey(RunContext runContext, Property<String> moveToKey, String sourceKey) throws Exception {
-        String filename = FilenameUtils.getName(sourceKey);
-        Optional<String> rPrefix = moveToKey == null
-            ? Optional.empty()
-            : runContext.render(moveToKey).as(String.class).map(k -> StringUtils.stripEnd(k, "/")).filter(StringUtils::isNotBlank);
-        return rPrefix.map(p -> p + "/" + filename).orElse(filename);
     }
 
     public static Pair<URI, Long> download(RunContext runContext, MinioAsyncClient client, String bucket, String key, String versionId) throws Exception {

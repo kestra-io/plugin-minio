@@ -9,6 +9,7 @@ import io.kestra.core.models.property.Property;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DownloadsTest extends AbstractMinIoTest {
 
@@ -113,9 +114,36 @@ public class DownloadsTest extends AbstractMinIoTest {
 
         list = list().build();
         listOutput = list.run(runContext(list));
-        listOutput.getObjects().forEach(obj ->
-            assertThat(obj.getKey().contains("/"), is(false))
+        assertThat(listOutput.getObjects().size(), is(2));
+        listOutput.getObjects().forEach(
+            obj -> assertThat(obj.getKey().contains("/"), is(false))
         );
+    }
+
+    @Test
+    void moveWithoutMoveToThrowsAndLeavesObjectsInSource() throws Exception {
+        this.createBucket();
+
+        upload("/tasks/source/");
+        upload("/tasks/source/");
+
+        Downloads task = Downloads.builder()
+            .id(DownloadsTest.class.getSimpleName())
+            .type(Downloads.class.getName())
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
+            .action(Property.ofValue(Downloads.Action.MOVE))
+            .prefix(Property.ofValue("tasks/source/"))
+            .build();
+
+        assertThrows(IllegalArgumentException.class, () -> task.run(runContext(task)));
+
+        List list = list().prefix(Property.ofValue("tasks/source/")).build();
+        List.Output listOutput = list.run(runContext(list));
+        assertThat(listOutput.getObjects().size(), is(2));
     }
 
 }
