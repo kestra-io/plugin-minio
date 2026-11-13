@@ -5,10 +5,12 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import io.kestra.core.models.property.Property;
+import io.kestra.core.utils.IdUtils;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DownloadsTest extends AbstractMinIoTest {
 
@@ -77,6 +79,71 @@ public class DownloadsTest extends AbstractMinIoTest {
         list = list().prefix(Property.ofValue("tasks/move"))
             .build();
         listOutput = list.run(runContext(list));
+        assertThat(listOutput.getObjects().size(), is(2));
+    }
+
+    @Test
+    void moveWithBucketOnlyAndNoKey() throws Exception {
+        this.createBucket();
+
+        upload("/tasks/nokey/");
+        upload("/tasks/nokey/");
+
+        var task = Downloads.builder()
+            .id(IdUtils.create())
+            .type(Downloads.class.getName())
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
+            .action(Property.ofValue(Downloads.Action.MOVE))
+            .moveTo(
+                Copy.CopyObject.builder()
+                    .bucket(Property.ofValue(this.BUCKET))
+                    .build()
+            )
+            .build();
+
+        var run = task.run(runContext(task));
+
+        assertThat(run.getObjects().size(), is(2));
+
+        var list = list().prefix(Property.ofValue("tasks/nokey")).build();
+        var listOutput = list.run(runContext(list));
+        assertThat(listOutput.getObjects().size(), is(0));
+
+        list = list().build();
+        listOutput = list.run(runContext(list));
+        assertThat(listOutput.getObjects().size(), is(2));
+        listOutput.getObjects().forEach(
+            obj -> assertThat(obj.getKey().contains("/"), is(false))
+        );
+    }
+
+    @Test
+    void moveWithoutMoveToThrowsAndLeavesObjectsInSource() throws Exception {
+        this.createBucket();
+
+        upload("/tasks/source/");
+        upload("/tasks/source/");
+
+        var task = Downloads.builder()
+            .id(IdUtils.create())
+            .type(Downloads.class.getName())
+            .bucket(Property.ofValue(this.BUCKET))
+            .endpoint(Property.ofValue(minIOContainer.getS3URL()))
+            .accessKeyId(Property.ofValue(minIOContainer.getUserName()))
+            .secretKeyId(Property.ofValue(minIOContainer.getPassword()))
+            .region(Property.ofValue(minIOContainer.getRegion()))
+            .action(Property.ofValue(Downloads.Action.MOVE))
+            .prefix(Property.ofValue("tasks/source/"))
+            .build();
+
+        assertThrows(IllegalArgumentException.class, () -> task.run(runContext(task)));
+
+        var list = list().prefix(Property.ofValue("tasks/source/")).build();
+        var listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(2));
     }
 

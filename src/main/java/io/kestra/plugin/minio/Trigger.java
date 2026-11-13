@@ -183,7 +183,10 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     @Schema(title = "Action to apply to listed objects after detection")
     private Property<Downloads.Action> action;
 
-    @Schema(title = "The destination bucket and key for the `MOVE` action")
+    @Schema(
+        title = "The destination bucket and key for the `MOVE` action",
+        description = "If key is not specified, objects are moved to the root of the destination bucket with their original file name."
+    )
     private Copy.CopyObject moveTo;
 
     @Builder.Default
@@ -226,6 +229,11 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     @Override
     public Optional<Execution> evaluate(ConditionContext conditionContext, TriggerContext context) throws Exception {
         RunContext runContext = conditionContext.getRunContext();
+
+        var rAction = runContext.render(this.action).as(Downloads.Action.class).orElse(Downloads.Action.NONE);
+        if (rAction == Downloads.Action.MOVE && this.moveTo == null) {
+            throw new IllegalArgumentException("Action 'MOVE' requires 'moveTo' to be configured.");
+        }
 
         if (this.killed.get()) {
             runContext.logger().debug(
@@ -347,7 +355,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
         }
 
         MinioService.performAction(
-            runContext, actionBlobs, runContext.render(this.action).as(Downloads.Action.class).orElse(Downloads.Action.NONE), runContext.render(this.bucket).as(String.class).orElse(null),
+            runContext, actionBlobs, rAction, runContext.render(this.bucket).as(String.class).orElse(null),
             this, this.moveTo
         );
 

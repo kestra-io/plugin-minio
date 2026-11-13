@@ -41,7 +41,14 @@ public class MinioService {
                 delete.run(runContext);
             }
         } else if (action == Downloads.Action.MOVE) {
+            var rPrefix = runContext.render(moveTo.getKey())
+                .as(String.class)
+                .map(k -> StringUtils.stripEnd(k, "/"))
+                .filter(StringUtils::isNotBlank);
+
             for (MinioObject object : list) {
+                var filename = FilenameUtils.getName(object.getKey());
+                var targetKey = rPrefix.map(p -> "%s/%s".formatted(p, filename)).orElse(filename);
                 Copy copy = Copy.builder()
                     .id("archive")
                     .type(Copy.class.getName())
@@ -58,14 +65,7 @@ public class MinioService {
                     )
                     .to(
                         moveTo.toBuilder()
-                            .key(
-                                Property.ofValue(
-                                    "%s/%s".formatted(
-                                        StringUtils.stripEnd(runContext.render(moveTo.getKey()).as(String.class).orElse(null) + "/", "/"),
-                                        FilenameUtils.getName(object.getKey())
-                                    )
-                                )
-                            )
+                            .key(Property.ofValue(targetKey))
                             .build()
                     )
                     .delete(Property.ofValue(true))

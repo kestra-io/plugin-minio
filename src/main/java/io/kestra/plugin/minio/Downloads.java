@@ -140,13 +140,19 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
     private Property<Action> action;
 
     @Schema(
-        title = "The destination bucket and key for `MOVE` action"
+        title = "The destination bucket and key for `MOVE` action",
+        description = "If key is not specified, objects are moved to the root of the destination bucket with their original file name."
     )
     @PluginProperty(dynamic = true, group = "destination")
     private Copy.CopyObject moveTo;
 
     @Override
     public Output run(RunContext runContext) throws Exception {
+        var rAction = runContext.render(this.action).as(Action.class).orElse(Action.NONE);
+        if (rAction == Action.MOVE && this.moveTo == null) {
+            throw new IllegalArgumentException("Action 'MOVE' requires 'moveTo' to be configured.");
+        }
+
         io.kestra.plugin.minio.List task = io.kestra.plugin.minio.List
             .builder()
             .id(this.id)
@@ -195,7 +201,7 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
                 .map(object -> new AbstractMap.SimpleEntry<>(object.getKey(), object.getUri()))
                 .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
 
-            MinioService.performAction(runContext, list, runContext.render(action).as(Action.class).orElseThrow(), bucket, this, moveTo);
+            MinioService.performAction(runContext, list, rAction, bucket, this, moveTo);
 
             return Output
                 .builder()
