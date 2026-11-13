@@ -3,7 +3,6 @@ package io.kestra.plugin.minio;
 import java.io.File;
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -42,14 +41,14 @@ public class MinioService {
                 delete.run(runContext);
             }
         } else if (action == Downloads.Action.MOVE) {
-            Optional<String> rPrefix = runContext.render(moveTo.getKey())
+            var rPrefix = runContext.render(moveTo.getKey())
                 .as(String.class)
                 .map(k -> StringUtils.stripEnd(k, "/"))
                 .filter(StringUtils::isNotBlank);
 
             for (MinioObject object : list) {
-                String filename = FilenameUtils.getName(object.getKey());
-                String targetKey = rPrefix.map(p -> "%s/%s".formatted(p, filename)).orElse(filename);
+                var filename = FilenameUtils.getName(object.getKey());
+                var targetKey = rPrefix.map(p -> "%s/%s".formatted(p, filename)).orElse(filename);
                 Copy copy = Copy.builder()
                     .id("archive")
                     .type(Copy.class.getName())

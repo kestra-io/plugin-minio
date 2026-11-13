@@ -5,6 +5,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import io.kestra.core.models.property.Property;
+import io.kestra.core.utils.IdUtils;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
@@ -88,8 +89,8 @@ public class DownloadsTest extends AbstractMinIoTest {
         upload("/tasks/nokey/");
         upload("/tasks/nokey/");
 
-        Downloads task = Downloads.builder()
-            .id(DownloadsTest.class.getSimpleName())
+        var task = Downloads.builder()
+            .id(IdUtils.create())
             .type(Downloads.class.getName())
             .bucket(Property.ofValue(this.BUCKET))
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
@@ -104,12 +105,12 @@ public class DownloadsTest extends AbstractMinIoTest {
             )
             .build();
 
-        Downloads.Output run = task.run(runContext(task));
+        var run = task.run(runContext(task));
 
         assertThat(run.getObjects().size(), is(2));
 
-        List list = list().prefix(Property.ofValue("tasks/nokey")).build();
-        List.Output listOutput = list.run(runContext(list));
+        var list = list().prefix(Property.ofValue("tasks/nokey")).build();
+        var listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(0));
 
         list = list().build();
@@ -127,8 +128,8 @@ public class DownloadsTest extends AbstractMinIoTest {
         upload("/tasks/source/");
         upload("/tasks/source/");
 
-        Downloads task = Downloads.builder()
-            .id(DownloadsTest.class.getSimpleName())
+        var task = Downloads.builder()
+            .id(IdUtils.create())
             .type(Downloads.class.getName())
             .bucket(Property.ofValue(this.BUCKET))
             .endpoint(Property.ofValue(minIOContainer.getS3URL()))
@@ -141,8 +142,8 @@ public class DownloadsTest extends AbstractMinIoTest {
 
         assertThrows(IllegalArgumentException.class, () -> task.run(runContext(task)));
 
-        List list = list().prefix(Property.ofValue("tasks/source/")).build();
-        List.Output listOutput = list.run(runContext(list));
+        var list = list().prefix(Property.ofValue("tasks/source/")).build();
+        var listOutput = list.run(runContext(list));
         assertThat(listOutput.getObjects().size(), is(2));
     }
 

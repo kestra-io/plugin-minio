@@ -148,8 +148,8 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        Action renderedAction = runContext.render(this.action).as(Action.class).orElse(Action.NONE);
-        if (renderedAction == Action.MOVE && this.moveTo == null) {
+        var rAction = runContext.render(this.action).as(Action.class).orElse(Action.NONE);
+        if (rAction == Action.MOVE && this.moveTo == null) {
             throw new IllegalArgumentException("Action 'MOVE' requires 'moveTo' to be configured.");
         }
 
@@ -201,7 +201,7 @@ public class Downloads extends AbstractMinioObject implements RunnableTask<Downl
                 .map(object -> new AbstractMap.SimpleEntry<>(object.getKey(), object.getUri()))
                 .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
 
-            MinioService.performAction(runContext, list, renderedAction, bucket, this, moveTo);
+            MinioService.performAction(runContext, list, rAction, bucket, this, moveTo);
 
             return Output
                 .builder()

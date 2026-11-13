@@ -230,8 +230,8 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     public Optional<Execution> evaluate(ConditionContext conditionContext, TriggerContext context) throws Exception {
         RunContext runContext = conditionContext.getRunContext();
 
-        var renderedAction = runContext.render(this.action).as(Downloads.Action.class).orElse(Downloads.Action.NONE);
-        if (renderedAction == Downloads.Action.MOVE && this.moveTo == null) {
+        var rAction = runContext.render(this.action).as(Downloads.Action.class).orElse(Downloads.Action.NONE);
+        if (rAction == Downloads.Action.MOVE && this.moveTo == null) {
             throw new IllegalArgumentException("Action 'MOVE' requires 'moveTo' to be configured.");
         }
 
@@ -355,7 +355,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
         }
 
         MinioService.performAction(
-            runContext, actionBlobs, renderedAction, runContext.render(this.bucket).as(String.class).orElse(null),
+            runContext, actionBlobs, rAction, runContext.render(this.bucket).as(String.class).orElse(null),
             this, this.moveTo
         );
 
