@@ -39,7 +39,7 @@ tasks.withType(JavaCompile) {
 
 configurations.all {
     // SEC-0369: platform BOM pins guava 33.4.8-jre, remove once it ships >= 33.7.2.
-    resolutionStrategy.force "com.google.guava:guava:33.7.2-jre"
+    resolutionStrategy.force "com.google.guava:guava:33.8.0-jre"
 }
 
 dependencies {
@@ -117,7 +117,7 @@ dependencies {
     testImplementation "org.testcontainers:testcontainers-minio:2.0.5"
 
     // sanity checks
-    testImplementation "io.kestra.plugin:plugin-docker:1.8.4"
+    testImplementation "io.kestra.plugin:plugin-docker:1.8.5"
 }
 
 /**********************************************************************************************************************\
